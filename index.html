@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>すするanki 0.01.00-g</title>
+<title>すするanki 0.01.01-g</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
@@ -128,7 +128,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
       <div class="logo-dot"></div>
       <div class="logo-text">すするanki</div>
     </div>
-    <div class="version-badge">v0.01.00-g</div>
+    <div class="version-badge">v0.01.01-g</div>
   </header>
 
   <div id="pgHome" class="screen active">
@@ -188,6 +188,10 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
 
   <div id="pgBox" class="screen">
     <h2 id="boxTitle">📝 問題カード箱</h2>
+    <div class="form-group form-row" style="margin-bottom: 15px;">
+      <input type="text" id="txtSearchBox" class="form-control" placeholder="問題や答えを検索..." oninput="renderBox()">
+      <button class="btn btn-secondary" style="width:auto; padding:0 16px; white-space:nowrap;" onclick="showAllCards()">全表示</button>
+    </div>
     <div class="list-header">
       <span id="lblBoxCount">0件のカード</span>
       <button class="btn btn-secondary" style="width:auto; padding:4px 10px; font-size:0.8rem; height:30px;" onclick="showAddQModal()">➕ 新規追加</button>
@@ -307,6 +311,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
 /**
  * Firebase Config - ここにFirebaseプロジェクトの設定を貼り付けてください
  */
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAGoYBRoupEFHng_cXoiHmZf9eAlX8ZCHA",
   authDomain: "susuruanki.firebaseapp.com",
@@ -764,6 +769,13 @@ function handleCategoryLongpress(catName, currentGroupName) {
   openContextMenu(`カテゴリー: ${catName}`, menuOptions);
 }
 
+function showAllCards() {
+  currentViewContext = 'all';
+  const searchBox = document.getElementById('txtSearchBox');
+  if (searchBox) searchBox.value = '';
+  renderBox();
+}
+
 function renderBox() {
   const container = document.getElementById('boxList');
   container.innerHTML = '';
@@ -785,6 +797,15 @@ function renderBox() {
     if (currentViewContext === 'weak') {
       filtered = db.filter(q => (q.correct + q.incorrect) > 0 && (q.correct / (q.correct + q.incorrect)) < 0.4);
     }
+  }
+
+  const searchBox = document.getElementById('txtSearchBox');
+  if (searchBox && searchBox.value.trim() !== '') {
+    const keyword = searchBox.value.trim().toLowerCase();
+    filtered = filtered.filter(q => 
+      q.question.toLowerCase().includes(keyword) || 
+      q.answer.toLowerCase().includes(keyword)
+    );
   }
 
   document.getElementById('boxTitle').innerText = titleString;
@@ -1384,7 +1405,7 @@ async function syncToCloud(isSilent = false) {
 
     // 3. きれいになった統合データをFirestoreへ上書き保存 (set)
     const payload = {
-      version: "0.01.00-g",
+      version: "0.01.01-g",
       db: db,
       categories: categories,
       categoryTree: categoryTree,
