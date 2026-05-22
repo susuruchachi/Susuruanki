@@ -2,22 +2,35 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>すするanki 0.01.05-g</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>すするanki 0.01.06-g</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+/* ★長押し時のテキスト選択・システムメニューを完全ブロック */
+*, *::before, *::after { 
+  margin:0; padding:0; box-sizing:border-box; 
+  -webkit-tap-highlight-color: transparent; 
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
 :root {
   --bg:     #080c14; --bg2:    #0f1724; --bg3:    #182030; --bg4:    #1e2940;
   --border: #2a3a55; --border2:#3a4f72; --text:   #e8edf5; --text2:  #8a9bb8;
   --text3:  #5a6e8a; --primary:#4f7cff; --primary2:#3a62e0; --accent: #7c3fff;
   --success:#22c77a; --danger: #ff4f6a; --warn:   #f5a623;
 }
-body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; overflow: hidden; position: fixed; width: 100%; height: 100%; user-select: none; }
-input, button, select, textarea { font-family: inherit; color: inherit; }
+body { 
+  background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; 
+  overflow: hidden; position: fixed; width: 100%; 
+  user-select: none; -webkit-user-select: none; /* テキスト選択禁止 */
+}
+/* 入力欄だけは選択・編集を許可 */
+input, textarea, select { user-select: auto; -webkit-user-select: auto; font-family: inherit; color: inherit; -webkit-touch-callout: default; }
 
-.app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: relative; }
-.screen { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 20px; padding-bottom: 130px; }
+/* ★高さを100dvh(動的ビューポート)にし、Safariのバー被りを防止 */
+.app-container { display: flex; flex-direction: column; height: 100dvh; width: 100vw; position: relative; }
+/* 下部メニューに隠れないようpadding-bottomを多めに確保 */
+.screen { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 20px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
 .screen.active { display: flex; }
 
 header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; background: var(--bg2); border-bottom: 1px solid var(--border); z-index: 10; }
@@ -53,15 +66,12 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
 .tree-group-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .tree-group-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--bg3); cursor: pointer; transition: background 0.2s; }
 .tree-group-header:active { background: var(--bg4); }
-.tree-group-title { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #fff; font-size: 0.95rem; }
-.tree-group-arrow { font-size: 0.8rem; color: var(--text3); transition: transform 0.2s; }
-.tree-group-card.expanded .tree-group-arrow { transform: rotate(90px); }
-.tree-group-children { display: none; padding: 6px 12px 12px 32px; flex-direction: column; gap: 6px; border-top: 1px solid rgba(42,58,85,0.4); }
-.tree-group-card.expanded .tree-group-children { display: flex; }
-.tree-cat-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--bg4); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: 0.2s; }
-.tree-cat-item:active { border-color: var(--primary); background: var(--bg3); }
-.tree-cat-label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text); font-weight: 500; }
-.tree-cat-count { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text3); background: var(--bg2); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); }
+.tree-group-title { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #fff; font-size: 0.95rem; flex:1; }
+.tree-group-arrow { font-size: 0.8rem; color: var(--text3); transition: transform 0.2s; padding: 5px; }
+.tree-group-card.expanded > .tree-group-header > .tree-group-arrow { transform: rotate(90px); }
+.tree-group-children { display: none; padding: 0; flex-direction: column; gap: 0; border-top: 1px solid rgba(42,58,85,0.4); }
+.tree-group-card.expanded > .tree-group-children { display: flex; }
+.tree-cat-count { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text3); background: var(--bg2); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); margin-left: auto; }
 
 .ctx-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4,6,10,0.7); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
 .menu-card { background: var(--bg2); border: 1px solid var(--border2); width: 100%; max-width: 340px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; }
@@ -137,7 +147,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
       <div class="logo-dot"></div>
       <div class="logo-text">すするanki</div>
     </div>
-    <div class="version-badge">v0.01.05-g</div>
+    <div class="version-badge">v0.01.06-g</div>
   </header>
 
   <div id="pgHome" class="screen active">
@@ -145,7 +155,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
     <div class="card">
       <div class="setting-box-title">⚙️ クイズ設定</div>
       <div class="form-group">
-        <label>🎯 出題範囲（大カテゴリー / 通常）</label>
+        <label>🎯 出題範囲（フォルダー選択）</label>
         <select id="selQuizScope" class="form-control"></select>
       </div>
       <div class="form-group">
@@ -180,17 +190,43 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
       </div>
     </div>
     <button class="btn" onclick="startQuiz()"><i class="nav-item"></i>🚀 クイズをスタートする</button>
+    <button class="btn btn-secondary" style="margin-top:15px;" onclick="openPage('pgTutorial')">📖 使い方ガイドを見る</button>
+  </div>
+
+  <div id="pgTutorial" class="screen">
+    <h2>📖 使い方ガイド</h2>
+    <div class="card">
+      <div class="setting-box-title">🔰 基本の3ステップ</div>
+      <div style="font-size:0.9rem; line-height:1.6; color:var(--text);">
+        <p style="margin-bottom:12px;"><strong>1. 📁 構造画面でフォルダーを作る</strong><br><span style="color:var(--text2); font-size:0.8rem;">長押しでフォルダーの中にさらにフォルダーを作れます。</span></p>
+        <p style="margin-bottom:12px;"><strong>2. 📝 問題箱で問題を追加する</strong><br><span style="color:var(--text2); font-size:0.8rem;">構造画面でフォルダー長押しから直接入れることも可能です。</span></p>
+        <p><strong>3. 🏠 ホームからクイズに挑戦！</strong><br><span style="color:var(--text2); font-size:0.8rem;">出題範囲を選ぶと、そのフォルダー内の全問題が出題されます。</span></p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="setting-box-title">💡 便利な隠し機能 (長押し)</div>
+      <p style="font-size:0.85rem; line-height:1.6; color:var(--text); margin-bottom:10px;">
+        画面内の色々な場所を<strong>「長押し」</strong>するとメニューが開きます。
+      </p>
+      <ul style="font-size:0.8rem; line-height:1.6; color:var(--text2); padding-left:20px;">
+        <li style="margin-bottom:6px;"><strong>構造画面のフォルダー：</strong><br>サブフォルダー作成、移動、<span style="color:#fff;">問題の一括追加</span>、エクスポートなど</li>
+        <li style="margin-bottom:4px;"><strong>問題箱の各カード：</strong><br>問題の編集、別フォルダーへの移動、削除</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="setting-box-title">✨ 解答のコツ (記述式)</div>
+      <p style="font-size:0.85rem; line-height:1.6; color:var(--text);">
+        全角・半角の違いは自動で吸収されます。<br>また、答えに「りんご, みかん」のようにカンマや読点が含まれる場合、順番が「みかん, りんご」と逆に入力しても正解として判定されます！
+      </p>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="openPage('pgHome')">🏠 ホームに戻る</button>
   </div>
 
   <div id="pgTree" class="screen">
     <h2>📁 構造エクスプローラー</h2>
-    <div class="form-group form-row">
-      <input type="text" id="txtNewGroup" class="form-control" placeholder="新しい大カテゴリー(フォルダー)名...">
-      <button class="btn" style="width:auto; padding:0 16px;" onclick="addNewGroup()">作成</button>
-    </div>
     <div class="form-group form-row" style="margin-bottom:20px;">
-      <input type="text" id="txtNewCat" class="form-control" placeholder="新しい通常カテゴリー名...">
-      <button class="btn btn-secondary" style="width:auto; padding:0 16px;" onclick="addNewCategory()">作成</button>
+      <input type="text" id="txtNewRoot" class="form-control" placeholder="新しい大元のフォルダーを作成...">
+      <button class="btn" style="width:auto; padding:0 16px;" onclick="addNewRootCategory()">作成</button>
     </div>
     <div class="tree-container" id="treeRoot"></div>
   </div>
@@ -338,9 +374,7 @@ const firebaseConfig = {
   measurementId: "G-Q9ZMYX8BF8"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
 const firestore = firebase.firestore();
 let currentUser = null;
@@ -367,28 +401,17 @@ auth.onAuthStateChanged((user) => {
 
 function firebaseLogin() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(err => {
-    console.error("Login Error:", err);
-    alert("ログインに失敗しました: " + err.message);
-  });
+  auth.signInWithPopup(provider).catch(err => { alert("ログインに失敗しました: " + err.message); });
 }
-
-function firebaseLogout() {
-  auth.signOut().then(() => {
-    alert("ログアウトしました");
-  }).catch(err => {
-    console.error("Logout Error:", err);
-  });
-}
+function firebaseLogout() { auth.signOut().then(() => { alert("ログアウトしました"); }); }
 
 const STORAGE_KEY = 'susuru_anki_017g';
 let db = [];
 let categories = ["未分類"];
-let categoryTree = { "未分類グループ": ["未分類"] };
+let categoryTree = {}; // 階層無制限に変更 (親名 -> 子配列)
 
 let currentViewContext = 'all';
 let pageHistory = [];
-
 let quizPool = [];
 let quizIndex = 0;
 let quizTimer = null;
@@ -398,22 +421,15 @@ let quizPhase = 'q';
 let selectedChoiceIdx = null;
 let currentQuestionGradThreshold = 5;
 
-let longPressTimeout = null;
-
-// ★全角半角・順序揺れを吸収する解答正規化機能
+// 解答正規化
 function normalizeAnswer(str) {
   if(!str) return '';
-  // 全角英数字を半角へ変換
-  let s = String(str).replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(c) {
-    return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
-  }).toLowerCase().trim();
-  // 様々な区切り文字を半角カンマに統一
+  let s = String(str).replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
   s = s.replace(/[、，／/]/g, ',');
-  // 分割してソートし、再結合する（順不同対応）
   return s.split(',').map(x => x.trim()).filter(x => x !== '').sort().join(',');
 }
 
-// ★一括追加用ロジック
+// 一括追加
 let targetBulkCategory = "";
 function showBulkAddModal(catName) {
   targetBulkCategory = catName;
@@ -421,17 +437,12 @@ function showBulkAddModal(catName) {
   document.getElementById('txtBulkAdd').value = '';
   document.getElementById('bulkAddOverlay').style.display = 'flex';
 }
-function closeBulkAdd() {
-  document.getElementById('bulkAddOverlay').style.display = 'none';
-}
+function closeBulkAdd() { document.getElementById('bulkAddOverlay').style.display = 'none'; }
 function submitBulkAdd() {
   const text = document.getElementById('txtBulkAdd').value.trim();
   if(!text) { closeBulkAdd(); return; }
-  const lines = text.split(/\r?\n/);
   let count = 0;
-  const grp = findGroupOfCategory(targetBulkCategory) || "未分類グループ";
-
-  lines.forEach(line => {
+  text.split(/\r?\n/).forEach(line => {
     let idx = line.indexOf(',');
     if(idx === -1) idx = line.indexOf('、');
     if(idx !== -1) {
@@ -440,10 +451,7 @@ function submitBulkAdd() {
       if(q && a) {
         db.push({
           id: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
-          question: q,
-          answer: a,
-          category: targetBulkCategory,
-          group: grp,
+          question: q, answer: a, category: targetBulkCategory,
           level: 0, correct: 0, incorrect: 0, streak: 0
         });
         count++;
@@ -461,15 +469,10 @@ window.onload = function() {
   loadData();
   autoMerge();
   buildQuizScopeDropdown();
-  
   history.pushState({ page: 'pgHome' }, '', '');
   window.onpopstate = function(event) {
-    if (pageHistory.length > 0) {
-      const prevPage = pageHistory.pop();
-      executePageTransition(prevPage, true);
-    } else {
-      executePageTransition('pgHome', true);
-    }
+    if (pageHistory.length > 0) executePageTransition(pageHistory.pop(), true);
+    else executePageTransition('pgHome', true);
   };
 };
 
@@ -482,24 +485,18 @@ function loadData() {
       if(parsed.categories) categories = parsed.categories;
       if(parsed.categoryTree) categoryTree = parsed.categoryTree;
     }
-  } catch(e) {
-    console.error("ローカルストレージの復元に失敗しました:", e);
-  }
+  } catch(e) { console.error("ローカル復元失敗:", e); }
   ensureSystemSanity();
 }
 
 function saveData() {
   ensureSystemSanity();
   const payload = { db, categories, categoryTree };
-  
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-
   if (currentUser) {
     clearTimeout(syncTimeout);
     setSyncStatus('saving', '🔄 保存中...');
-    syncTimeout = setTimeout(() => {
-      backgroundCloudSave(payload);
-    }, 1000);
+    syncTimeout = setTimeout(() => backgroundCloudSave(payload), 1000);
   }
 }
 
@@ -508,59 +505,40 @@ function setSyncStatus(state, text) {
   if(!el) return;
   el.className = `sync-status ${state}`;
   el.innerText = text;
-
-  if (state === 'success' || state === 'error') {
-    setTimeout(() => {
-      el.classList.add('hidden');
-    }, 3000);
-  }
+  if (state === 'success' || state === 'error') setTimeout(() => el.classList.add('hidden'), 3000);
 }
 
 async function backgroundCloudSave(payload) {
   try {
-    const userDocRef = firestore.collection("susuru_anki_users").doc(currentUser.uid);
-    await userDocRef.set({
-      version: "0.01.05-g",
-      db: payload.db,
-      categories: payload.categories,
-      categoryTree: payload.categoryTree,
-      lastSync: firebase.firestore.FieldValue.serverTimestamp()
+    await firestore.collection("susuru_anki_users").doc(currentUser.uid).set({
+      version: "0.01.06-g", db: payload.db, categories: payload.categories,
+      categoryTree: payload.categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp()
     });
     setSyncStatus('success', '✅ 保存完了');
-  } catch (err) {
-    console.error("Auto Sync Error:", err);
-    setSyncStatus('error', '⚠️ 保存エラー');
-  }
+  } catch (err) { setSyncStatus('error', '⚠️ 保存エラー'); }
 }
 
 function ensureSystemSanity() {
-  if (!categories.includes("未分類")) categories.push("未分類");
-  if (!categoryTree["未分類グループ"]) categoryTree["未分類グループ"] = [];
-  if (!categoryTree["未分類グループ"].includes("未分類")) {
-    categoryTree["未分類グループ"].push("未分類");
+  // 旧バージョンのGroupとCategoryをフラット化し、全て「フォルダー」として扱う移行処理
+  for (let parent in categoryTree) {
+    if (!categories.includes(parent)) categories.push(parent);
   }
-  
+  if (!categories.includes("未分類")) categories.push("未分類");
   categories = [...new Set(categories.filter(c => c && c.trim() !== ""))];
 
+  // ツリーに属していない幽霊を消す
   const activeCatsInTree = new Set();
-  for (let g in categoryTree) {
-    if (Array.isArray(categoryTree[g])) {
-      categoryTree[g].forEach(c => activeCatsInTree.add(c));
-    }
+  for (let p in categoryTree) {
+    (categoryTree[p] || []).forEach(c => activeCatsInTree.add(c));
   }
-  categories = categories.filter(c => activeCatsInTree.has(c));
-  
-  db = db.filter(item => 
-    item && 
-    item.question && item.question.toString().trim() !== "" && 
-    item.answer && item.answer.toString().trim() !== ""
-  );
+  categories = categories.filter(c => activeCatsInTree.has(c) || getTopLevelCategories().includes(c));
 
+  db = db.filter(i => i && i.question && i.question.toString().trim() !== "" && i.answer && i.answer.toString().trim() !== "");
   db.forEach(item => {
     if(!item.id) item.id = 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    if(!item.category || !categories.includes(item.category)) item.category = "未分類";
-    if(!item.group) {
-      item.group = findGroupOfCategory(item.category) || "未分類グループ";
+    // 旧データ（group）がある場合は救済
+    if(!item.category || !categories.includes(item.category)) {
+      item.category = item.group && categories.includes(item.group) ? item.group : "未分類";
     }
     if(item.level === undefined) item.level = 0;
     if(item.correct === undefined) item.correct = 0;
@@ -569,65 +547,39 @@ function ensureSystemSanity() {
   });
 }
 
-function findGroupOfCategory(catName) {
-  for (let g in categoryTree) {
-    if (categoryTree[g].includes(catName)) return g;
-  }
-  return null;
-}
-
 function autoMerge() {
-  let initialCount = db.length;
   let mergedMap = new Map();
-  
   db.forEach(item => {
     let safeCat = item.category ? String(item.category).trim() : "未分類";
-    let safeQ = item.question ? String(item.question).trim() : "";
-    let safeA = item.answer ? String(item.answer).trim() : "";
-    let key = `${safeCat}_${safeQ}_${safeA}`;
-
+    let key = `${safeCat}_${String(item.question).trim()}_${String(item.answer).trim()}`;
     if (!mergedMap.has(key)) {
       mergedMap.set(key, JSON.parse(JSON.stringify(item)));
     } else {
-      let existing = mergedMap.get(key);
-      existing.correct = (Number(existing.correct) || 0) + (Number(item.correct) || 0);
-      existing.incorrect = (Number(existing.incorrect) || 0) + (Number(item.incorrect) || 0);
-      existing.level = Math.max(Number(existing.level) || 0, Number(item.level) || 0);
-      existing.streak = Math.max(Number(existing.streak) || 0, Number(item.streak) || 0);
+      let ext = mergedMap.get(key);
+      ext.correct = (Number(ext.correct)||0) + (Number(item.correct)||0);
+      ext.incorrect = (Number(ext.incorrect)||0) + (Number(item.incorrect)||0);
+      ext.level = Math.max(Number(ext.level)||0, Number(item.level)||0);
+      ext.streak = Math.max(Number(ext.streak)||0, Number(item.streak)||0);
     }
   });
-  
   db = Array.from(mergedMap.values());
   saveData();
-  console.log(`[AutoMerge] 重複マージ完了: ${initialCount}件 -> ${db.length}件`);
 }
 
-function openPage(pageId) {
-  executePageTransition(pageId, false);
-}
-
+function openPage(pageId) { executePageTransition(pageId, false); }
 function executePageTransition(pageId, isBackAction) {
   clearInterval(quizTimer);
-  
   const activeScreen = document.querySelector('.screen.active');
   const currentId = activeScreen ? activeScreen.id : 'pgHome';
-  
   if (!isBackAction && currentId !== pageId) {
     pageHistory.push(currentId);
     history.pushState({ page: pageId }, '', '');
   }
-
-  document.querySelectorAll('.screen').forEach(s => {
-    s.classList.remove('active');
-    s.style.display = 'none';
-  });
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-  const targetScreen = document.getElementById(pageId);
-  if(targetScreen) {
-    targetScreen.style.display = 'flex';
-    targetScreen.classList.add('active');
-  }
+  const tgt = document.getElementById(pageId);
+  if(tgt) { tgt.style.display = 'flex'; tgt.classList.add('active'); }
 
   if (pageId === 'pgHome') document.getElementById('navHome').classList.add('active');
   if (pageId === 'pgTree') { document.getElementById('navTree').classList.add('active'); renderTree(); }
@@ -638,326 +590,275 @@ function executePageTransition(pageId, isBackAction) {
   buildQuizScopeDropdown();
 }
 
+/* ★ 再帰的な階層構造サポート */
+function getTopLevelCategories() {
+  const children = new Set();
+  for (const parent in categoryTree) {
+    (categoryTree[parent] || []).forEach(c => children.add(c));
+  }
+  return categories.filter(c => !children.has(c));
+}
+// 自身と子孫すべてを取得
+function getAllSubcategories(catName, result = new Set()) {
+  if (result.has(catName)) return [...result];
+  result.add(catName);
+  if (categoryTree[catName]) categoryTree[catName].forEach(c => getAllSubcategories(c, result));
+  return [...result];
+}
+
 function renderTree() {
   const root = document.getElementById('treeRoot');
   root.innerHTML = '';
+  getTopLevelCategories().forEach(cat => root.appendChild(createTreeNode(cat, 0)));
+}
 
-  for (let groupName in categoryTree) {
-    const isExpanded = localStorage.getItem(`group_exp_${groupName}`) === 'true';
-    
-    const groupCard = document.createElement('div');
-    groupCard.className = `tree-group-card ${isExpanded ? 'expanded' : ''}`;
-    
-    const header = document.createElement('div');
-    header.className = 'tree-group-header';
-    setupLongpress(header, () => handleGroupLongpress(groupName));
-    
-    header.onclick = (e) => {
-      const nextState = !groupCard.classList.contains('expanded');
-      groupCard.classList.toggle('expanded');
-      localStorage.setItem(`group_exp_${groupName}`, nextState);
-    };
+function createTreeNode(catName, depth) {
+  const container = document.createElement('div');
+  if (depth > 0) { container.style.marginLeft = '16px'; container.style.marginTop = '6px'; }
+  
+  const card = document.createElement('div');
+  card.className = 'tree-group-card';
+  if (depth > 0) {
+    card.style.borderLeft = '3px solid var(--primary)';
+    card.style.borderRadius = '0 8px 8px 0';
+  }
 
-    const titleArea = document.createElement('div');
-    titleArea.className = 'tree-group-title';
-    titleArea.innerHTML = `<span>📁</span> <span>${escapeHtml(groupName)}</span>`;
-    
+  const header = document.createElement('div');
+  header.className = 'tree-group-header';
+  if (depth > 0) { header.style.background = 'var(--bg4)'; header.style.padding = '10px 14px'; }
+  setupLongpress(header, () => handleCategoryLongpress(catName));
+
+  const directCount = db.filter(q => q.category === catName).length;
+  const children = categoryTree[catName] || [];
+  const hasChildren = children.length > 0;
+  const isExpanded = localStorage.getItem(`cat_exp_${catName}`) === 'true';
+  if (isExpanded) card.classList.add('expanded');
+
+  const titleArea = document.createElement('div');
+  titleArea.className = 'tree-group-title';
+  titleArea.innerHTML = `<span>${depth===0?'📁':'📂'}</span> <span style="word-break:break-all;">${escapeHtml(catName)}</span> <span class="tree-cat-count">${directCount}</span>`;
+  titleArea.onclick = (e) => {
+    e.stopPropagation();
+    currentViewContext = { type: 'category', value: catName };
+    openPage('pgBox');
+  };
+  header.appendChild(titleArea);
+
+  if (hasChildren) {
     const arrow = document.createElement('div');
     arrow.className = 'tree-group-arrow';
     arrow.innerText = isExpanded ? '▼' : '▶';
-    
-    header.appendChild(titleArea);
+    arrow.onclick = (e) => {
+      e.stopPropagation();
+      const nextState = !card.classList.contains('expanded');
+      card.classList.toggle('expanded');
+      arrow.innerText = nextState ? '▼' : '▶';
+      localStorage.setItem(`cat_exp_${catName}`, nextState);
+    };
     header.appendChild(arrow);
-    groupCard.appendChild(header);
-
-    const childrenContainer = document.createElement('div');
-    childrenContainer.className = 'tree-group-children';
-
-    const childCats = categoryTree[groupName] || [];
-    childCats.forEach(catName => {
-      const catCount = db.filter(q => q.category === catName).length;
-      
-      const catItem = document.createElement('div');
-      catItem.className = 'tree-cat-item';
-      setupLongpress(catItem, () => handleCategoryLongpress(catName, groupName));
-      
-      catItem.onclick = () => {
-        currentViewContext = { type: 'category', value: catName };
-        openPage('pgBox');
-      };
-
-      catItem.innerHTML = `
-        <div class="tree-cat-label"><span>🔖</span> ${escapeHtml(catName)}</div>
-        <div class="tree-cat-count">${catCount}</div>
-      `;
-      childrenContainer.appendChild(catItem);
-    });
-
-    groupCard.appendChild(childrenContainer);
-    root.appendChild(groupCard);
   }
+
+  card.appendChild(header);
+
+  if (hasChildren) {
+    const childContainer = document.createElement('div');
+    childContainer.className = 'tree-group-children';
+    children.forEach(c => childContainer.appendChild(createTreeNode(c, depth + 1)));
+    card.appendChild(childContainer);
+  }
+
+  container.appendChild(card);
+  return container;
 }
 
-function addNewGroup() {
-  const txt = document.getElementById('txtNewGroup').value.trim();
+function addNewRootCategory() {
+  const txt = document.getElementById('txtNewRoot').value.trim();
   if(!txt) return;
-  if(categoryTree[txt]) return alert("既に使用されている大カテゴリー名です。");
-  
-  categoryTree[txt] = [];
-  document.getElementById('txtNewGroup').value = '';
-  saveData();
-  renderTree();
-}
-
-function addNewCategory() {
-  const txt = document.getElementById('txtNewCat').value.trim();
-  if(!txt) return;
-  if(categories.includes(txt)) return alert("既に使用されているカテゴリー名です。");
-
+  if(categories.includes(txt)) return alert("既に使用されているフォルダー名です。");
   categories.push(txt);
-  if(!categoryTree["未分類グループ"]) categoryTree["未分類グループ"] = [];
-  categoryTree["未分類グループ"].push(txt);
-  
-  document.getElementById('txtNewCat').value = '';
-  saveData();
-  renderTree();
+  document.getElementById('txtNewRoot').value = '';
+  saveData(); renderTree();
 }
 
+// 誤爆を防ぐ強化版長押し
 function setupLongpress(element, actionCallback) {
   let pressTimer;
-  
+  let isDragging = false;
+
   const startHandler = (e) => {
+    if (e.type === 'contextmenu') { e.preventDefault(); return; }
+    if (e.touches && e.touches.length > 1) return;
+    isDragging = false;
     pressTimer = setTimeout(() => {
-      e.preventDefault();
-      actionCallback();
-    }, 600);
+      if (!isDragging) {
+        if (navigator.vibrate) navigator.vibrate(50);
+        actionCallback();
+      }
+    }, 500);
   };
-  
-  const cancelHandler = () => {
-    clearTimeout(pressTimer);
-  };
+  const moveHandler = () => { isDragging = true; clearTimeout(pressTimer); };
+  const cancelHandler = () => clearTimeout(pressTimer);
 
   element.addEventListener('mousedown', startHandler);
   element.addEventListener('touchstart', startHandler, { passive: true });
+  element.addEventListener('mousemove', moveHandler);
+  element.addEventListener('touchmove', moveHandler, { passive: true });
   element.addEventListener('mouseup', cancelHandler);
   element.addEventListener('mouseleave', cancelHandler);
   element.addEventListener('touchend', cancelHandler);
-  element.addEventListener('touchmove', cancelHandler);
+  element.addEventListener('touchcancel', cancelHandler);
+  element.addEventListener('contextmenu', e => e.preventDefault());
 }
 
 function openContextMenu(title, items) {
   document.getElementById('ctxHeader').innerText = title;
   const body = document.getElementById('ctxBody');
   body.innerHTML = '';
-
   items.forEach(item => {
     if (item.type === 'separator') {
-      const sep = document.createElement('div');
-      sep.className = 'menu-sep';
-      body.appendChild(sep);
+      const sep = document.createElement('div'); sep.className = 'menu-sep'; body.appendChild(sep);
     } else {
       const btn = document.createElement('button');
       btn.className = `menu-item ${item.danger ? 'danger' : ''}`;
       btn.innerHTML = item.html;
-      btn.onclick = () => {
-        closeContextMenu();
-        item.action();
-      };
+      btn.onclick = () => { closeContextMenu(); item.action(); };
       body.appendChild(btn);
     }
   });
-
-  const overlay = document.getElementById('ctxOverlay');
-  overlay.style.display = 'flex';
+  document.getElementById('ctxOverlay').style.display = 'flex';
 }
 
-function closeContextMenu() {
-  document.getElementById('ctxOverlay').style.display = 'none';
-}
+function closeContextMenu() { document.getElementById('ctxOverlay').style.display = 'none'; }
 
-function handleGroupLongpress(groupName) {
-  if (groupName === "未分類グループ") {
-    return alert("未分類グループは基本システムフォルダーのため変更できません。");
-  }
-  
-  openContextMenu(`大カテゴリー: ${groupName}`, [
+function handleCategoryLongpress(catName) {
+  if (catName === "未分類") return alert("システム基本フォルダーは変更できません。");
+
+  // 自身の子孫には移動させない
+  const subCats = getAllSubcategories(catName);
+  const validParents = categories.filter(c => c !== catName && !subCats.includes(c));
+  let moveOptions = validParents.map(p => ({
+    html: `📁 「${p}」の中へ移動`,
+    action: () => {
+      for(let g in categoryTree) { if(categoryTree[g]) categoryTree[g] = categoryTree[g].filter(c => c !== catName); }
+      if(!categoryTree[p]) categoryTree[p] = [];
+      categoryTree[p].push(catName);
+      saveData(); renderTree();
+    }
+  }));
+
+  openContextMenu(`フォルダー: ${catName}`, [
     {
-      html: '✏️ 名称を変更する',
+      html: '➕ 中にサブフォルダーを作る',
       action: () => {
-        const n = prompt("新しい大カテゴリー名を入力:", groupName);
-        if(!n || n.trim() === "" || n === groupName) return;
-        if(categoryTree[n.trim()]) return alert("既に同名の大カテゴリーが存在します。");
-        
-        categoryTree[n.trim()] = categoryTree[groupName];
-        delete categoryTree[groupName];
-        
-        db.forEach(q => { if(q.group === groupName) q.group = n.trim(); });
-        saveData();
-        renderTree();
+        const n = prompt(`「${catName}」の中に作成するフォルダー名:`);
+        if(!n || n.trim() === "") return;
+        if(categories.includes(n.trim())) return alert("既に同名のフォルダーが存在します。");
+        categories.push(n.trim());
+        if(!categoryTree[catName]) categoryTree[catName] = [];
+        categoryTree[catName].push(n.trim());
+        saveData(); renderTree();
       }
     },
     {
-      html: '❌ 削除して中身を未分類へ',
-      danger: true,
-      action: () => {
-        if(!confirm(`大カテゴリー「${groupName}」を削除（解体）しますか？\n所属するカテゴリーと問題は「未分類」へ移動します。`)) return;
-        
-        const children = categoryTree[groupName] || [];
-        children.forEach(c => {
-          if(!categoryTree["未分類グループ"].includes(c)) {
-            categoryTree["未分類グループ"].push(c);
-          }
-        });
-        
-        delete categoryTree[groupName];
-        db.forEach(q => {
-          if(q.group === groupName) {
-            q.group = "未分類グループ";
-            q.category = "未分類";
-          }
-        });
-        
-        saveData();
-        renderTree();
-      }
-    }
-  ]);
-}
-
-function handleCategoryLongpress(catName, currentGroupName) {
-  if (catName === "未分類") {
-    return alert("未分類カテゴリーはシステム基本構造のため変更・移動できません。");
-  }
-
-  let groupMoveItems = [];
-  for (let g in categoryTree) {
-    if (g !== currentGroupName) {
-      groupMoveItems.push({
-        html: `📁 「${g}」フォルダーへ移動`,
-        action: () => {
-          categoryTree[currentGroupName] = categoryTree[currentGroupName].filter(c => c !== catName);
-          if(!categoryTree[g]) categoryTree[g] = [];
-          categoryTree[g].push(catName);
-          
-          db.forEach(q => { if(q.category === catName) q.group = g; });
-          saveData();
-          renderTree();
-        }
-      });
-    }
-  }
-
-  let menuOptions = [
-    {
-      html: '✏️ カテゴリー名称を変更',
-      action: () => {
-        const n = prompt("新しいカテゴリー名を入力:", catName);
-        if(!n || n.trim() === "" || n === catName) return;
-        if(categories.includes(n.trim())) return alert("既に同名のカテゴリーが存在します。");
-        
-        categories = categories.map(c => c === catName ? n.trim() : c);
-        for(let g in categoryTree) {
-          categoryTree[g] = categoryTree[g].map(c => c === catName ? n.trim() : c);
-        }
-        db.forEach(q => { if(q.category === catName) q.category = n.trim(); });
-        
-        saveData();
-        renderTree();
-      }
+      html: '📝 この直下に問題を追加',
+      action: () => { currentViewContext = { type: 'category', value: catName }; showAddQModal(); }
     },
     { type: 'separator' },
+    {
+      html: '✏️ フォルダー名を変更',
+      action: () => {
+        const n = prompt("新しいフォルダー名を入力:", catName);
+        if(!n || n.trim() === "" || n === catName) return;
+        if(categories.includes(n.trim())) return alert("既に同名が存在します。");
+        categories = categories.map(c => c === catName ? n.trim() : c);
+        for(let p in categoryTree) {
+          categoryTree[p] = categoryTree[p].map(c => c === catName ? n.trim() : c);
+        }
+        if(categoryTree[catName]) { categoryTree[n.trim()] = categoryTree[catName]; delete categoryTree[catName]; }
+        db.forEach(q => { if(q.category === catName) q.category = n.trim(); });
+        saveData(); renderTree();
+      }
+    },
     {
       html: '➕ 問題を一括追加 (Q,A 改行)',
       action: () => { showBulkAddModal(catName); }
     },
     {
-      html: '📤 このカテゴリーをエクスポート',
+      html: '📤 このフォルダーと中身をエクスポート',
       action: () => {
-        const subset = db.filter(q => q.category === catName);
-        const payload = { db: subset, categories: [catName], categoryTree: { [currentGroupName]: [catName] } };
+        const allTargets = getAllSubcategories(catName);
+        const subset = db.filter(q => allTargets.includes(q.category));
+        let partialTree = {};
+        allTargets.forEach(t => { if(categoryTree[t]) partialTree[t] = categoryTree[t]; });
+        const payload = { db: subset, categories: allTargets, categoryTree: partialTree };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `susuru_anki_${catName}_${Date.now()}.json`;
-        a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `susuru_anki_${catName}_${Date.now()}.json`; a.click();
       }
     },
     { type: 'separator' },
-    ...groupMoveItems,
+    ...moveOptions,
     { type: 'separator' },
     {
-      html: '❌ このカテゴリー内の問題を全削除',
+      html: '❌ 削除 (中のフォルダー・問題も全て削除)',
       danger: true,
       action: () => {
-        if(!confirm(`警告: カテゴリー「${catName}」に属する全カードをシステムから完全に抹消しますか？`)) return;
-        db = db.filter(q => q.category !== catName);
-        categories = categories.filter(c => c !== catName);
-        for(let g in categoryTree) {
-          categoryTree[g] = categoryTree[g].filter(c => c !== catName);
+        if(!confirm(`警告: 「${catName}」と、その中にある全データ・フォルダーを抹消しますか？`)) return;
+        const toDelete = getAllSubcategories(catName);
+        db = db.filter(q => !toDelete.includes(q.category));
+        categories = categories.filter(c => !toDelete.includes(c));
+        for(let p in categoryTree) {
+          if(toDelete.includes(p)) delete categoryTree[p];
+          else if(categoryTree[p]) categoryTree[p] = categoryTree[p].filter(c => !toDelete.includes(c));
         }
-        saveData();
-        renderTree();
+        saveData(); renderTree();
       }
     }
-  ];
-
-  openContextMenu(`カテゴリー: ${catName}`, menuOptions);
+  ]);
 }
 
 function showAllCards() {
   currentViewContext = 'all';
-  const searchBox = document.getElementById('txtSearchBox');
-  if (searchBox) searchBox.value = '';
+  const sb = document.getElementById('txtSearchBox'); if(sb) sb.value = '';
   renderBox();
 }
 
 function renderBox() {
-  const container = document.getElementById('boxList');
-  container.innerHTML = '';
-
+  const container = document.getElementById('boxList'); container.innerHTML = '';
   let filtered = [...db];
   let titleString = "📝 全ての問題一覧";
 
   if (typeof currentViewContext === 'object' && currentViewContext.type === 'category') {
     const targetCat = currentViewContext.value;
-    filtered = db.filter(q => q.category === targetCat);
+    const subCats = getAllSubcategories(targetCat);
+    filtered = db.filter(q => subCats.includes(q.category));
     titleString = `🔖 ${targetCat} 内のカード`;
   } else if (typeof currentViewContext === 'string' && currentViewContext !== 'all') {
     titleString = `📊 実績抽出カードの一覧`;
-    const threshold = parseInt(document.getElementById('numGradThreshold').value) || 5;
-    if (currentViewContext === 'grad') filtered = db.filter(q => q.correct >= threshold);
-    if (currentViewContext === 'master') filtered = db.filter(q => q.correct < threshold && q.level >= 3);
-    if (currentViewContext === 'normal') filtered = db.filter(q => q.correct < threshold && q.level >= 1 && q.level <= 2);
+    const th = parseInt(document.getElementById('numGradThreshold').value) || 5;
+    if (currentViewContext === 'grad') filtered = db.filter(q => q.correct >= th);
+    if (currentViewContext === 'master') filtered = db.filter(q => q.correct < th && q.level >= 3);
+    if (currentViewContext === 'normal') filtered = db.filter(q => q.correct < th && q.level >= 1 && q.level <= 2);
     if (currentViewContext === 'unseen') filtered = db.filter(q => q.correct === 0 && q.incorrect === 0);
-    if (currentViewContext === 'weak') {
-      filtered = db.filter(q => (q.correct + q.incorrect) > 0 && (q.correct / (q.correct + q.incorrect)) < 0.4);
-    }
+    if (currentViewContext === 'weak') filtered = db.filter(q => (q.correct+q.incorrect)>0 && (q.correct/(q.correct+q.incorrect))<0.4);
   }
 
-  const searchBox = document.getElementById('txtSearchBox');
-  if (searchBox && searchBox.value.trim() !== '') {
-    const keyword = searchBox.value.trim().toLowerCase();
-    filtered = filtered.filter(q => 
-      q.question.toLowerCase().includes(keyword) || 
-      q.answer.toLowerCase().includes(keyword)
-    );
+  const sb = document.getElementById('txtSearchBox');
+  if (sb && sb.value.trim() !== '') {
+    const kw = sb.value.trim().toLowerCase();
+    filtered = filtered.filter(q => q.question.toLowerCase().includes(kw) || q.answer.toLowerCase().includes(kw));
   }
 
   document.getElementById('boxTitle').innerText = titleString;
   document.getElementById('lblBoxCount').innerText = `${filtered.length} 件のカード`;
-
   if(filtered.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text3); font-size:0.9rem;">表示条件に一致する問題がありません</div>';
-    return;
+    container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text3); font-size:0.9rem;">問題がありません</div>'; return;
   }
 
   filtered.forEach(item => {
-    const threshold = parseInt(document.getElementById('numGradThreshold').value) || 5;
-    const isGrad = item.correct >= threshold;
-    
-    const card = document.createElement('div');
-    card.className = 'q-card';
+    const th = parseInt(document.getElementById('numGradThreshold').value) || 5;
+    const isGrad = item.correct >= th;
+    const card = document.createElement('div'); card.className = 'q-card';
     setupLongpress(card, () => handleQuestionLongpress(item));
 
     card.innerHTML = `
@@ -965,8 +866,8 @@ function renderBox() {
       <div style="font-size:0.85rem; color:var(--text2); margin-bottom:8px;">A: <span style="color:#fff; font-weight:500;">${escapeHtml(item.answer)}</span></div>
       <div class="q-card-sub">
         <span class="badge ${isGrad ? 'badge-grad':'badge-level'}">${isGrad ? 'GRADUATE':'LV '+item.level}</span>
-        <span>正解: ${item.correct}回 / 不正解: ${item.incorrect}回</span>
-        <span style="font-size:0.75rem; color:var(--text3);">📂 ${escapeHtml(item.group)} / ${escapeHtml(item.category)}</span>
+        <span>正解: ${item.correct} / 不正解: ${item.incorrect}</span>
+        <span style="font-size:0.75rem; color:var(--text3);">📂 ${escapeHtml(item.category)}</span>
       </div>
     `;
     container.appendChild(card);
@@ -974,17 +875,12 @@ function renderBox() {
 }
 
 function handleQuestionLongpress(item) {
-  let categoryMoveItems = [];
+  let moveOptions = [];
   categories.forEach(cat => {
     if (cat !== item.category) {
-      categoryMoveItems.push({
-        html: `📂 カテゴリー「${cat}」へ移動`,
-        action: () => {
-          item.category = cat;
-          item.group = findGroupOfCategory(cat) || "未分類グループ";
-          saveData();
-          renderBox();
-        }
+      moveOptions.push({
+        html: `📂 フォルダー「${cat}」へ移動`,
+        action: () => { item.category = cat; saveData(); renderBox(); }
       });
     }
   });
@@ -993,28 +889,20 @@ function handleQuestionLongpress(item) {
     {
       html: '✏️ このカードの問題文と答えを編集',
       action: () => {
-        const newQ = prompt("問題文を編集:", item.question);
-        if(newQ === null) return;
-        const newA = prompt("答えを編集:", item.answer);
-        if(newA === null) return;
-        
-        item.question = newQ.trim() || item.question;
-        item.answer = newA.trim() || item.answer;
-        autoMerge();
-        renderBox();
+        const newQ = prompt("問題文を編集:", item.question); if(newQ === null) return;
+        const newA = prompt("答えを編集:", item.answer); if(newA === null) return;
+        item.question = newQ.trim() || item.question; item.answer = newA.trim() || item.answer;
+        autoMerge(); renderBox();
       }
     },
     { type: 'separator' },
-    ...categoryMoveItems,
+    ...moveOptions,
     { type: 'separator' },
     {
-      html: '🗑️ この問題カードを完全削除',
-      danger: true,
+      html: '🗑️ この問題カードを完全削除', danger: true,
       action: () => {
-        if(!confirm("この単一問題カードをデータベースから完全に消去しますか？")) return;
-        db = db.filter(q => q.id !== item.id);
-        saveData();
-        renderBox();
+        if(!confirm("この問題を完全に消去しますか？")) return;
+        db = db.filter(q => q.id !== item.id); saveData(); renderBox();
       }
     }
   ]);
@@ -1022,56 +910,33 @@ function handleQuestionLongpress(item) {
 
 function showAddQModal() {
   let defaultCat = "未分類";
-  if (typeof currentViewContext === 'object' && currentViewContext.type === 'category') {
-    defaultCat = currentViewContext.value;
-  }
-  
-  const q = prompt("新規追加：問題文を入力してください");
-  if(!q || q.trim() === "") return;
-  const a = prompt("新規追加：正解となる答えを入力してください");
-  if(!a || a.trim() === "") return;
-
-  const grp = findGroupOfCategory(defaultCat) || "未分類グループ";
-  const newCard = {
+  if (typeof currentViewContext === 'object' && currentViewContext.type === 'category') defaultCat = currentViewContext.value;
+  const q = prompt("新規追加：問題文を入力してください"); if(!q || q.trim() === "") return;
+  const a = prompt("新規追加：正解を入力してください"); if(!a || a.trim() === "") return;
+  db.push({
     id: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
-    question: q.trim(),
-    answer: a.trim(),
-    category: defaultCat,
-    group: grp,
+    question: q.trim(), answer: a.trim(), category: defaultCat,
     level: 0, correct: 0, incorrect: 0, streak: 0
-  };
-
-  db.push(newCard);
-  autoMerge();
-  renderBox();
+  });
+  autoMerge(); renderBox();
 }
 
-function filterBoxByStatus(statusType) {
-  currentViewContext = statusType;
-  openPage('pgBox');
-}
+function filterBoxByStatus(statusType) { currentViewContext = statusType; openPage('pgBox'); }
 
 function buildQuizScopeDropdown() {
-  const select = document.getElementById('selQuizScope');
-  if(!select) return;
-  
+  const select = document.getElementById('selQuizScope'); if(!select) return;
   const oldVal = select.value;
-  select.innerHTML = '<option value="all">🌐 登録されている全問題から出題</option>';
+  select.innerHTML = '<option value="all">🌐 全ての問題から出題</option>';
 
-  for (let groupName in categoryTree) {
-    const groupOpt = document.createElement('option');
-    groupOpt.value = `group:${groupName}`;
-    groupOpt.innerText = `📁 [大] ${groupName}`;
-    select.appendChild(groupOpt);
-
-    const children = categoryTree[groupName] || [];
-    children.forEach(cat => {
-      const catOpt = document.createElement('option');
-      catOpt.value = `cat:${cat}`;
-      catOpt.innerText = `    🔖 ${cat}`;
-      select.appendChild(catOpt);
-    });
+  function addOption(cat, depth) {
+    const opt = document.createElement('option');
+    opt.value = `cat:${cat}`;
+    const prefix = '　'.repeat(depth) + (depth === 0 ? '📁 ' : '📂 ');
+    opt.innerText = prefix + cat;
+    select.appendChild(opt);
+    (categoryTree[cat] || []).forEach(child => addOption(child, depth + 1));
   }
+  getTopLevelCategories().forEach(cat => addOption(cat, 0));
   if(oldVal) select.value = oldVal;
 }
 
@@ -1082,502 +947,252 @@ function startQuiz() {
   currentQuestionGradThreshold = parseInt(document.getElementById('numGradThreshold').value) || 5;
 
   let subset = [...db];
+  if(!includeGrad) subset = subset.filter(q => q.correct < currentQuestionGradThreshold);
 
-  if(!includeGrad) {
-    subset = subset.filter(q => q.correct < currentQuestionGradThreshold);
-  }
-
-  if(scope.startsWith('group:')) {
-    const gName = scope.replace('group:', '');
-    subset = subset.filter(q => q.group === gName);
-  } else if(scope.startsWith('cat:')) {
+  if(scope.startsWith('cat:')) {
     const cName = scope.replace('cat:', '');
-    subset = subset.filter(q => q.category === cName);
+    const targets = getAllSubcategories(cName);
+    subset = subset.filter(q => targets.includes(q.category));
   }
 
-  if(subset.length === 0) {
-    return alert("⚠️ 条件に合致する問題カードが1つも見つかりませんでした。\n設定を変更するか、問題を追加してください。");
-  }
-
+  if(subset.length === 0) return alert("⚠️ 条件に合致する問題が見つかりませんでした。");
   for (let i = subset.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [subset[i], subset[j]] = [subset[j], subset[i]];
   }
-
-  quizPool = subset.slice(0, limitCount);
-  quizIndex = 0;
-  openPage('pgQuizPlayer');
-  loadQuizQuestion();
+  quizPool = subset.slice(0, limitCount); quizIndex = 0;
+  openPage('pgQuizPlayer'); loadQuizQuestion();
 }
 
 function loadQuizQuestion() {
-  quizPhase = 'q';
-  selectedChoiceIdx = null;
-  
-  const currentCard = quizPool[quizIndex];
+  quizPhase = 'q'; selectedChoiceIdx = null;
+  const cur = quizPool[quizIndex];
   document.getElementById('lblQuizProgress').innerText = `Q ${quizIndex + 1}/${quizPool.length}`;
-  document.getElementById('lblQuizQuestion').innerText = currentCard.question;
-  
-  const feedbackElem = document.getElementById('quizFeedback');
-  feedbackElem.className = 'feedback-area';
-  feedbackElem.style.display = 'none';
-
+  document.getElementById('lblQuizQuestion').innerText = cur.question;
+  const fb = document.getElementById('quizFeedback'); fb.className = 'feedback-area'; fb.style.display = 'none';
   document.getElementById('btnQuizPass').style.display = 'inline-flex';
   document.getElementById('btnQuizAction').innerText = '確定する';
 
-  const targetSpeedMode = document.getElementById('selQuizSpeed').value;
-  let baseSec = 15;
-  if (targetSpeedMode === 'easy') baseSec = 25;
-  if (targetSpeedMode === 'hard') baseSec = 10;
-  if (targetSpeedMode === 'expert') baseSec = 5;
+  const speed = document.getElementById('selQuizSpeed').value;
+  let base = 15;
+  if (speed === 'easy') base = 25; else if (speed === 'hard') base = 10; else if (speed === 'expert') base = 5;
+  if(cur.answer.length > 5) base += Math.min(15, (cur.answer.length - 5) * 1.5);
+  if(/[\u3040-\u30ff\u4e00-\u9faf]/.test(cur.answer)) base += 5;
+  quizTimeLimit = base; quizTimeLeft = base;
 
-  const len = currentCard.answer.length;
-  if(len > 5) baseSec += Math.min(15, (len - 5) * 1.5);
-  if(/[\u3040-\u30ff\u4e00-\u9faf]/.test(currentCard.answer)) baseSec += 5;
-
-  quizTimeLimit = baseSec;
-  quizTimeLeft = baseSec;
-
-  const mode = document.getElementById('selQuizMode').value;
-  if(mode === 'choice') {
+  if(document.getElementById('selQuizMode').value === 'choice') {
     document.getElementById('boxDescArea').style.display = 'none';
     document.getElementById('boxChoiceArea').style.display = 'grid';
-    buildFourChoices(currentCard);
+    buildFourChoices(cur);
   } else {
     document.getElementById('boxChoiceArea').style.display = 'none';
     document.getElementById('boxDescArea').style.display = 'block';
-    const inputField = document.getElementById('txtDescAnswer');
-    inputField.value = '';
-    inputField.disabled = false;
-    inputField.focus();
+    const inp = document.getElementById('txtDescAnswer'); inp.value = ''; inp.disabled = false; inp.focus();
   }
 
-  clearInterval(quizTimer);
-  updateTimerUI();
-  
-  let hintShown = false;
-  document.getElementById('lblQuizHint').style.display = 'none';
+  clearInterval(quizTimer); updateTimerUI();
+  let hintShown = false; document.getElementById('lblQuizHint').style.display = 'none';
 
   quizTimer = setInterval(() => {
     quizTimeLeft -= 0.1;
-    if(quizTimeLeft <= 0) {
-      quizTimeLeft = 0;
-      clearInterval(quizTimer);
-      triggerQuizTimeout();
-    }
+    if(quizTimeLeft <= 0) { quizTimeLeft = 0; clearInterval(quizTimer); evaluateRoundAnswer(false, "⏰ 時間切れ！"); }
     updateTimerUI();
-
-    if (targetSpeedMode !== 'expert' && !hintShown && quizTimeLeft < (quizTimeLimit * (targetSpeedMode === 'easy' ? 0.7 : 0.4))) {
+    if (speed !== 'expert' && !hintShown && quizTimeLeft < (quizTimeLimit * (speed === 'easy' ? 0.7 : 0.4))) {
       hintShown = true;
-      showQuizHintText(currentCard.answer);
+      const hb = document.getElementById('lblQuizHint');
+      hb.innerText = `ヒント: 先頭は「 ${cur.answer.charAt(0)} 」 ${cur.answer.length>3?`(全 ${cur.answer.length} 文字)`:''}`;
+      hb.style.display = 'inline-block';
     }
   }, 100);
 }
 
 function updateTimerUI() {
   const pct = (quizTimeLeft / quizTimeLimit) * 100;
-  const bar = document.getElementById('barTimerFill');
-  bar.style.width = `${pct}%`;
-  
-  if(pct < 30) bar.classList.add('warning');
-  else bar.classList.remove('warning');
-
+  const bar = document.getElementById('barTimerFill'); bar.style.width = `${pct}%`;
+  if(pct < 30) bar.classList.add('warning'); else bar.classList.remove('warning');
   document.getElementById('lblQuizTimerText').innerText = `${quizTimeLeft.toFixed(1)}s`;
 }
 
-function showQuizHintText(ansStr) {
-  const hintBox = document.getElementById('lblQuizHint');
-  let hint = `ヒント: 先頭は「 ${ansStr.charAt(0)} 」`;
-  if (ansStr.length > 3) hint += ` (全 ${ansStr.length} 文字)`;
-  hintBox.innerText = hint;
-  hintBox.style.display = 'inline-block';
-}
-
-function buildFourChoices(currentCard) {
-  const area = document.getElementById('boxChoiceArea');
-  area.innerHTML = '';
-
-  let alternatives = db.filter(q => q.answer !== currentCard.answer).map(q => q.answer);
-  alternatives = [...new Set(alternatives)];
-  
-  for (let i = alternatives.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [alternatives[i], alternatives[j]] = [alternatives[j], alternatives[i]];
-  }
-  
-  let finalFour = [currentCard.answer];
-  for(let m=0; m<alternatives.length; m++) {
-    if(finalFour.length >= 4) break;
-    finalFour.push(alternatives[m]);
-  }
-
-  while(finalFour.length < 4) {
-    finalFour.push(`ダミー選択肢_${Math.floor(Math.random()*1000)}`);
-  }
-
-  for (let i = finalFour.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [finalFour[i], finalFour[j]] = [finalFour[j], finalFour[i]];
-  }
-
+function buildFourChoices(cur) {
+  const area = document.getElementById('boxChoiceArea'); area.innerHTML = '';
+  let alt = [...new Set(db.filter(q => q.answer !== cur.answer).map(q => q.answer))];
+  alt.sort(() => Math.random() - 0.5);
+  let finalFour = [cur.answer, ...alt.slice(0, 3)];
+  while(finalFour.length < 4) finalFour.push(`選択肢_${Math.floor(Math.random()*1000)}`);
+  finalFour.sort(() => Math.random() - 0.5);
   finalFour.forEach((text, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'choice-btn';
+    const btn = document.createElement('button'); btn.className = 'choice-btn';
     btn.innerHTML = `<div class="choice-idx">${i+1}</div><div style="flex:1;">${escapeHtml(text)}</div>`;
     btn.onclick = () => {
       if(quizPhase !== 'q') return;
       document.querySelectorAll('.choice-btn').forEach(b => b.style.borderColor = 'var(--border)');
-      btn.style.borderColor = 'var(--primary)';
-      selectedChoiceIdx = text;
+      btn.style.borderColor = 'var(--primary)'; selectedChoiceIdx = text;
     };
     area.appendChild(btn);
   });
 }
 
-function triggerQuizTimeout() {
-  evaluateRoundAnswer(false, "⏰ 時間切れになりました！");
-}
-
-function passQuizQuestion() {
-  clearInterval(quizTimer);
-  evaluateRoundAnswer(false, "🏳️ 問題をスキップ（パス）しました");
-}
+function passQuizQuestion() { clearInterval(quizTimer); evaluateRoundAnswer(false, "🏳️ パスしました"); }
 
 function submitQuizAction() {
   if (quizPhase === 'a') {
     quizIndex++;
-    if(quizIndex < quizPool.length) {
-      loadQuizQuestion();
-    } else {
-      alert("🏁 クイズが全問終了しました！実績画面で進捗を確認しましょう。");
-      openPage('pgHome');
-    }
+    if(quizIndex < quizPool.length) loadQuizQuestion();
+    else { alert("🏁 クイズ終了！実績を確認しましょう。"); openPage('pgHome'); }
     return;
   }
-
   clearInterval(quizTimer);
-  const mode = document.getElementById('selQuizMode').value;
-  const currentCard = quizPool[quizIndex];
-  let isCorrect = false;
-
-  if (mode === 'choice') {
-    if(!selectedChoiceIdx) {
-      alert("選択肢をどれか1つタップしてください。");
-      quizTimer = setInterval(() => {}, 1000);
-      return;
-    }
-    isCorrect = (selectedChoiceIdx === currentCard.answer);
+  const cur = quizPool[quizIndex]; let isCorrect = false;
+  if (document.getElementById('selQuizMode').value === 'choice') {
+    if(!selectedChoiceIdx) { alert("選択肢をタップしてください。"); quizTimer=setInterval(()=>{},1000); return; }
+    isCorrect = (selectedChoiceIdx === cur.answer);
   } else {
-    // ★追加: 正規化処理を通して正誤判定
-    const inputVal = document.getElementById('txtDescAnswer').value;
-    const normInput = normalizeAnswer(inputVal);
-    const normAns = normalizeAnswer(currentCard.answer);
-    isCorrect = (normInput === normAns);
+    isCorrect = (normalizeAnswer(document.getElementById('txtDescAnswer').value) === normalizeAnswer(cur.answer));
     document.getElementById('txtDescAnswer').disabled = true;
   }
-
-  evaluateRoundAnswer(isCorrect, isCorrect ? "🎉 正解です！" : "❌ 残念、不正解です");
+  evaluateRoundAnswer(isCorrect, isCorrect ? "🎉 正解！" : "❌ 不正解");
 }
 
-function evaluateRoundAnswer(isCorrect, headingText) {
-  quizPhase = 'a';
-  const currentCard = quizPool[quizIndex];
-  
-  let masterItem = db.find(q => q.id === currentCard.id);
-  if(masterItem) {
+function evaluateRoundAnswer(isCorrect, head) {
+  quizPhase = 'a'; const cur = quizPool[quizIndex];
+  let m = db.find(q => q.id === cur.id);
+  if(m) {
     if(isCorrect) {
-      masterItem.correct++;
-      masterItem.streak++;
-      if(masterItem.streak >= 2 && masterItem.level < 5) {
-        masterItem.level++;
-        masterItem.streak = 0;
-      }
+      m.correct++; m.streak++;
+      if(m.streak >= 2 && m.level < 5) { m.level++; m.streak = 0; }
     } else {
-      masterItem.incorrect++;
-      masterItem.streak = 0;
-      if(masterItem.level > 0) masterItem.level--;
+      m.incorrect++; m.streak = 0; if(m.level > 0) m.level--;
     }
     saveData();
   }
-
-  const fBox = document.getElementById('quizFeedback');
-  const fTitle = document.getElementById('feedbackResultText');
-  const fDetail = document.getElementById('feedbackAnswerText');
-
-  fTitle.innerText = headingText;
-  fDetail.innerText = `正解: ${currentCard.answer}`;
-  fBox.className = `feedback-area ${isCorrect ? 'correct':'incorrect'}`;
-  fBox.style.display = 'flex';
-
+  const fb = document.getElementById('quizFeedback');
+  document.getElementById('feedbackResultText').innerText = head;
+  document.getElementById('feedbackAnswerText').innerText = `正解: ${cur.answer}`;
+  fb.className = `feedback-area ${isCorrect ? 'correct':'incorrect'}`; fb.style.display = 'flex';
   document.getElementById('btnQuizPass').style.display = 'none';
-  document.getElementById('btnQuizAction').innerText = '次の問題へ進む';
+  document.getElementById('btnQuizAction').innerText = '次の問題へ';
 }
 
 function renderStats() {
-  const threshold = parseInt(document.getElementById('numGradThreshold').value) || 5;
-  const total = db.length;
-  
-  const grad = db.filter(q => q.correct >= threshold).length;
-  const master = db.filter(q => q.correct < threshold && q.level >= 3).length;
-  const normal = db.filter(q => q.correct < threshold && q.level >= 1 && q.level <= 2).length;
-  const unseen = db.filter(q => q.correct === 0 && q.incorrect === 0).length;
-  const weak = db.filter(q => (q.correct + q.incorrect) > 0 && (q.correct / (q.correct + q.incorrect)) < 0.4).length;
-
-  document.getElementById('statTotal').innerText = total;
-  document.getElementById('statGradRatio').innerText = total > 0 ? `${Math.round((grad/total)*100)}%` : '0%';
-
-  document.getElementById('cntGrad').innerText = grad;
-  document.getElementById('cntMaster').innerText = master;
-  document.getElementById('cntNormal').innerText = normal;
-  document.getElementById('cntUnseen').innerText = unseen;
-  document.getElementById('cntWeak').innerText = weak;
+  const th = parseInt(document.getElementById('numGradThreshold').value) || 5;
+  const t = db.length;
+  document.getElementById('statTotal').innerText = t;
+  document.getElementById('cntGrad').innerText = db.filter(q => q.correct >= th).length;
+  document.getElementById('cntMaster').innerText = db.filter(q => q.correct < th && q.level >= 3).length;
+  document.getElementById('cntNormal').innerText = db.filter(q => q.correct < th && q.level >= 1 && q.level <= 2).length;
+  document.getElementById('cntUnseen').innerText = db.filter(q => q.correct === 0 && q.incorrect === 0).length;
+  document.getElementById('cntWeak').innerText = db.filter(q => (q.correct+q.incorrect)>0 && (q.correct/(q.correct+q.incorrect))<0.4).length;
+  document.getElementById('statGradRatio').innerText = t > 0 ? `${Math.round((document.getElementById('cntGrad').innerText/t)*100)}%` : '0%';
 }
 
 function exportJSON() {
-  const payload = { db, categories, categoryTree };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `susuru_anki_backup_${Date.now()}.json`;
-  a.click();
+  const blob = new Blob([JSON.stringify({ db, categories, categoryTree }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `susuru_anki_${Date.now()}.json`; a.click();
 }
-
 function importJSON(e) {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(evt) {
+  if(!e.target.files[0]) return;
+  const r = new FileReader();
+  r.onload = function(evt) {
     try {
-      const parsed = JSON.parse(evt.target.result);
-      if(parsed.db) db = parsed.db;
-      if(parsed.categories) categories = parsed.categories;
-      if(parsed.categoryTree) categoryTree = parsed.categoryTree;
-      autoMerge();
-      alert("📦 JSONインポートに成功し、重複データを統合しました！");
-      openPage('pgHome');
-    } catch(err) {
-      alert("ファイル解析エラー: 有効なJSONデータ構造ではありません。");
-    }
+      const p = JSON.parse(evt.target.result);
+      if(p.db) db = p.db; if(p.categories) categories = p.categories; if(p.categoryTree) categoryTree = p.categoryTree;
+      autoMerge(); alert("📦 インポート成功！"); openPage('pgHome');
+    } catch(err) { alert("無効なJSONです。"); }
   };
-  reader.readAsText(file);
+  r.readAsText(e.target.files[0]);
 }
 
 function exportCSV() {
-  let csvLines = [["問題", "答え", "カテゴリー", "大カテゴリー", "レベル", "正解数", "不正解数"]];
-  db.forEach(q => {
-    csvLines.push([
-      q.question, q.answer, q.category, q.group, q.level, q.correct, q.incorrect
-    ]);
-  });
-
-  const csvContent = csvLines.map(line => line.map(text => `"${String(text).replace(/"/g, '""')}"`).join(",")).join("\n");
-  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `susuru_anki_data_${Date.now()}.csv`;
-  a.click();
+  let lines = [["問題", "答え", "フォルダー", "レベル", "正解数", "不正解数"]];
+  db.forEach(q => lines.push([q.question, q.answer, q.category, q.level, q.correct, q.incorrect]));
+  const csv = lines.map(l => l.map(t => `"${String(t).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const b = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `susuru_anki_${Date.now()}.csv`; a.click();
 }
-
 function importCSV(e) {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(evt) {
+  if(!e.target.files[0]) return;
+  const r = new FileReader();
+  r.onload = function(evt) {
     try {
-      const rawText = evt.target.result;
-      const lines = rawText.split(/\r?\n/).filter(l => l.trim() !== "");
-      if(lines.length < 2) return alert("インポート可能な有効データ行が見つかりません。");
-
-      const parseCSVLine = (text) => {
-        let fields = [];
-        let cur = "";
-        let inQuotes = false;
+      const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim() !== "");
+      if(lines.length < 2) return alert("データがありません。");
+      const parse = (text) => {
+        let f=[], cur="", inQ=false;
         for(let i=0; i<text.length; i++) {
-          let char = text.charAt(i);
-          if(char === '"') {
-            if(inQuotes && text.charAt(i+1) === '"') { cur += '"'; i++; }
-            else { inQuotes = !inQuotes; }
-          } else if(char === ',' && !inQuotes) {
-            fields.push(cur); cur = "";
-          } else { cur += char; }
+          let c = text.charAt(i);
+          if(c === '"') { if(inQ && text.charAt(i+1)==='"') { cur+='"'; i++; } else inQ = !inQ; }
+          else if(c === ',' && !inQ) { f.push(cur); cur = ""; } else cur += c;
         }
-        fields.push(cur);
-        return fields;
+        f.push(cur); return f;
       };
-
-      const headerFields = parseCSVLine(lines[0]).map(h => h.trim());
-      
-      let idxQ = headerFields.indexOf("問題");
-      let idxA = headerFields.indexOf("答え");
-      let idxC = headerFields.indexOf("カテゴリー");
-      let idxG = headerFields.findIndex(h => h === "大カテゴリー" || h === "group");
-      let idxL = headerFields.indexOf("レベル");
-      let idxOk = headerFields.indexOf("正解数");
-      let idxNg = headerFields.indexOf("不正解数");
-
-      if(idxQ === -1) idxQ = 0;
-      if(idxA === -1) idxA = 1;
-      if(idxC === -1) idxC = 2;
-
-      let importCount = 0;
-
-      for(let i = 1; i < lines.length; i++) {
-        const cols = parseCSVLine(lines[i]);
-        if(cols.length <= Math.max(idxQ, idxA)) continue;
-
-        const qText = cols[idxQ]?.trim();
-        const aText = cols[idxA]?.trim();
-        if(!qText || !aText) continue;
-
-        let cText = (idxC !== -1 && cols[idxC]) ? cols[idxC].trim() : "未分類";
-        let gText = (idxG !== -1 && cols[idxG]) ? cols[idxG].trim() : "未分類グループ";
-        if(!cText) cText = "未分類";
-        if(!gText) gText = "未分類グループ";
-
-        if(!categories.includes(cText)) categories.push(cText);
-        if(!categoryTree[gText]) categoryTree[gText] = [];
-        if(!categoryTree[gText].includes(cText)) categoryTree[gText].push(cText);
-
-        const lvl = (idxL !== -1 && cols[idxL]) ? parseInt(cols[idxL]) || 0 : 0;
-        const okC = (idxOk !== -1 && cols[idxOk]) ? parseInt(cols[idxOk]) || 0 : 0;
-        const ngC = (idxNg !== -1 && cols[idxNg]) ? parseInt(cols[idxNg]) || 0 : 0;
-
+      const h = parse(lines[0]).map(x=>x.trim());
+      let iQ = h.indexOf("問題"), iA = h.indexOf("答え"), iC = h.indexOf("フォルダー");
+      if(iQ===-1) iQ=0; if(iA===-1) iA=1; if(iC===-1) iC=2;
+      let count = 0;
+      for(let i=1; i<lines.length; i++) {
+        const c = parse(lines[i]);
+        if(c.length <= Math.max(iQ, iA)) continue;
+        const q = c[iQ]?.trim(), a = c[iA]?.trim(); if(!q || !a) continue;
+        let cat = (iC !== -1 && c[iC]) ? c[iC].trim() : "未分類"; if(!cat) cat="未分類";
+        if(!categories.includes(cat)) categories.push(cat);
         db.push({
-          id: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
-          question: qText, answer: aText, category: cText, group: gText,
-          level: lvl, correct: okC, incorrect: ngC, streak: 0
-        });
-        importCount++;
+          id: 'id_'+Math.random().toString(36).slice(2)+Date.now().toString(36),
+          question: q, answer: a, category: cat, level: 0, correct: 0, incorrect: 0, streak: 0
+        }); count++;
       }
-
-      autoMerge();
-      alert(`📊 CSVから ${importCount} 件のカードをインポート統合しました。`);
-      openPage('pgHome');
-    } catch(err) {
-      alert("CSVファイルの読み込み解析に失敗しました。ヘッダー構造を確認してください。");
-    }
+      autoMerge(); alert(`📊 ${count}件インポートしました。`); openPage('pgHome');
+    } catch(err) { alert("CSV解析に失敗しました。"); }
   };
-  reader.readAsText(file);
+  r.readAsText(e.target.files[0]);
 }
 
 async function syncToCloud(isSilent = false) {
-  if (!currentUser) {
-    if (!isSilent) alert("☁️ クラウド同期エラー\nGoogleアカウントでログインしてください。");
-    return;
-  }
-
+  if (!currentUser) { if (!isSilent) alert("Googleアカウントでログインしてください。"); return; }
   try {
-    if (!isSilent) console.log("🔄 同期を開始します...");
-
-    const userDocRef = firestore.collection("susuru_anki_users").doc(currentUser.uid);
-    const docSnap = await userDocRef.get();
-
-    let remoteData = null;
-    if (docSnap.exists) {
-      remoteData = docSnap.data();
-    }
-
-    let updatedCount = 0;
-
-    if (remoteData) {
-      if (Array.isArray(remoteData.db)) {
-        let localDbMap = new Map(db.map(q => [q.id, q]));
-
-        remoteData.db.forEach(rq => {
-          if (!rq.question || rq.question.trim() === "" || !rq.answer || rq.answer.trim() === "") return;
-
-          if (localDbMap.has(rq.id)) {
-            let lq = localDbMap.get(rq.id);
-            if (rq.level > lq.level || rq.correct > lq.correct || rq.streak > lq.streak) {
-              localDbMap.set(rq.id, rq);
-              updatedCount++;
-            }
-          } else {
-            localDbMap.set(rq.id, rq);
-            updatedCount++;
-          }
+    const ref = firestore.collection("susuru_anki_users").doc(currentUser.uid);
+    const snap = await ref.get();
+    if (snap.exists) {
+      let r = snap.data();
+      if (Array.isArray(r.db)) {
+        let lMap = new Map(db.map(q => [q.id, q]));
+        r.db.forEach(rq => {
+          if (!rq.question || !rq.answer) return;
+          if (lMap.has(rq.id)) {
+            let lq = lMap.get(rq.id);
+            if (rq.level > lq.level || rq.correct > lq.correct || rq.streak > lq.streak) lMap.set(rq.id, rq);
+          } else lMap.set(rq.id, rq);
         });
-        db = Array.from(localDbMap.values());
+        db = Array.from(lMap.values());
       }
-
-      let remoteTree = remoteData.categoryTree || {};
-      let remoteCategories = remoteData.categories || ["未分類"];
-
-      remoteCategories.forEach(rc => {
-        if (rc && rc.trim() !== "" && !categories.includes(rc)) {
-          categories.push(rc);
-          updatedCount++;
-        }
-      });
-
-      for (let remoteGroupName in remoteTree) {
-        if (!categoryTree.hasOwnProperty(remoteGroupName)) {
-          categoryTree[remoteGroupName] = (remoteTree[remoteGroupName] || []).filter(c => categories.includes(c));
-          updatedCount++;
-        } else {
-          let combined = [...new Set([...(categoryTree[remoteGroupName] || []), ...(remoteTree[remoteGroupName] || [])])];
-          categoryTree[remoteGroupName] = combined.filter(c => categories.includes(c));
-        }
+      let rCat = r.categories || [];
+      rCat.forEach(rc => { if (rc && !categories.includes(rc)) categories.push(rc); });
+      let rTree = r.categoryTree || {};
+      for (let p in rTree) {
+        if (!categories.includes(p)) categories.push(p);
+        if (!categoryTree[p]) categoryTree[p] = [];
+        rTree[p].forEach(c => { if (!categoryTree[p].includes(c)) categoryTree[p].push(c); });
       }
     }
-
     ensureSystemSanity();
-
-    const payload = {
-      version: "0.01.05-g",
-      db: db,
-      categories: categories,
-      categoryTree: categoryTree,
-      lastSync: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    await userDocRef.set(payload);
-
+    await ref.set({ version: "0.01.06-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
     autoMerge();
-    
     if (document.getElementById('pgTree').classList.contains('active')) renderTree();
     if (document.getElementById('pgBox').classList.contains('active')) renderBox();
-
-    if (!isSilent) {
-      alert(`☁️ 双方向同期に成功しました！\nクラウドとデータを統合し、マージと削除の反映を完了しました。`);
-      openPage('pgHome');
-    } else {
-      console.log("[CloudSync] 自動マージ同期完了");
-    }
-
-  } catch (err) {
-    console.error("Sync Error:", err);
-    if (!isSilent) {
-      alert(`⚠️ 同期エラーが発生しました\nネットワーク接続やFirestoreの設定を確認してください。\n詳細: ${err.message}`);
-    }
-  }
+    if (!isSilent) { alert(`☁️ 同期完了！`); openPage('pgHome'); }
+  } catch (err) { if (!isSilent) alert(`⚠️ エラー: ${err.message}`); }
 }
 
 function factoryReset() {
-  if(!confirm("⚠️ 警告 ⚠️\nローカルに保存されているすべての問題カード、カテゴリー、グループ構造の設定が完全に消去されます。\nこの操作は取り消せません。本当に初期化しますか？")) return;
-  
+  if(!confirm("⚠️ 全消去します。よろしいですか？")) return;
   localStorage.removeItem(STORAGE_KEY);
-  db = [];
-  categories = ["未分類"];
-  categoryTree = { "未分類グループ": ["未分類"] };
-  saveData();
-  
-  alert("💥 ローカルデータベースのクリーン初期化が完了しました。");
-  openPage('pgHome');
+  db = []; categories = ["未分類"]; categoryTree = {}; saveData();
+  alert("💥 初期化完了。"); openPage('pgHome');
 }
 
-function escapeHtml(str) {
-  if(!str) return '';
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function escapeHtml(s) {
+  if(!s) return '';
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }
 </script>
-
 </body>
 </html>
