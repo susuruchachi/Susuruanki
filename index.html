@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>すするanki 0.01.07-g</title>
+<title>すするanki 0.01.08-g</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 /* ★長押し時のテキスト選択・システムメニューを完全ブロック */
@@ -147,7 +147,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
       <div class="logo-dot"></div>
       <div class="logo-text">すするanki</div>
     </div>
-    <div class="version-badge">v0.01.07-g</div>
+    <div class="version-badge">v0.01.08-g</div>
   </header>
 
   <div id="pgHome" class="screen active">
@@ -415,6 +415,7 @@ let pageHistory = [];
 let quizPool = [];
 let quizIndex = 0;
 let quizTimer = null;
+let autoNextTimeout = null; // ★追加: 4択自動遷移用タイマー
 let quizTimeLimit = 0;
 let quizTimeLeft = 0;
 let quizPhase = 'q';
@@ -512,7 +513,7 @@ function setSyncStatus(state, text) {
 async function backgroundCloudSave(payload) {
   try {
     await firestore.collection("susuru_anki_users").doc(currentUser.uid).set({
-      version: "0.01.07-g", db: payload.db, categories: payload.categories,
+      version: "0.01.08-g", db: payload.db, categories: payload.categories,
       categoryTree: payload.categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp()
     });
     setSyncStatus('success', '✅ 保存完了');
@@ -570,6 +571,7 @@ function autoMerge() {
 function openPage(pageId) { executePageTransition(pageId, false); }
 function executePageTransition(pageId, isBackAction) {
   clearInterval(quizTimer);
+  clearTimeout(autoNextTimeout); // ★追加
   const activeScreen = document.querySelector('.screen.active');
   const currentId = activeScreen ? activeScreen.id : 'pgHome';
   if (!isBackAction && currentId !== pageId) {
@@ -932,7 +934,7 @@ function buildQuizScopeDropdown() {
   function addOption(cat, depth) {
     const opt = document.createElement('option');
     opt.value = `cat:${cat}`;
-    const prefix = '　'.repeat(depth) + (depth === 0 ? '📁 ' : '📂 ');
+    const prefix = ' '.repeat(depth) + (depth === 0 ? '📁 ' : '📂 ');
     opt.innerText = prefix + cat;
     select.appendChild(opt);
     (categoryTree[cat] || []).forEach(child => addOption(child, depth + 1));
@@ -1037,6 +1039,7 @@ function passQuizQuestion() { clearInterval(quizTimer); evaluateRoundAnswer(fals
 
 function submitQuizAction() {
   if (quizPhase === 'a') {
+    clearTimeout(autoNextTimeout); // ★追加: 自動遷移をキャンセル
     quizIndex++;
     if(quizIndex < quizPool.length) loadQuizQuestion();
     else { alert("🏁 クイズ終了！実績を確認しましょう。"); openPage('pgHome'); }
@@ -1072,6 +1075,14 @@ function evaluateRoundAnswer(isCorrect, head) {
   fb.className = `feedback-area ${isCorrect ? 'correct':'incorrect'}`; fb.style.display = 'flex';
   document.getElementById('btnQuizPass').style.display = 'none';
   document.getElementById('btnQuizAction').innerText = '次の問題へ';
+
+  // ★追加: 4択モードの場合は3秒後に自動で次の問題へ
+  if (document.getElementById('selQuizMode').value === 'choice') {
+    clearTimeout(autoNextTimeout);
+    autoNextTimeout = setTimeout(() => {
+      if (quizPhase === 'a') submitQuizAction();
+    }, 3000);
+  }
 }
 
 function renderStats() {
@@ -1175,7 +1186,7 @@ async function syncToCloud(isSilent = false) {
       }
     }
     ensureSystemSanity();
-    await ref.set({ version: "0.01.07-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
+    await ref.set({ version: "0.01.08-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
     autoMerge();
     if (document.getElementById('pgTree').classList.contains('active')) renderTree();
     if (document.getElementById('pgBox').classList.contains('active')) renderBox();
