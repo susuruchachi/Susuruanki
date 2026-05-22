@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>すするanki 0.01.03-g</title>
+<title>すするanki 0.01.04-g</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
@@ -137,7 +137,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
       <div class="logo-dot"></div>
       <div class="logo-text">すするanki</div>
     </div>
-    <div class="version-badge">v0.01.03-g</div>
+    <div class="version-badge">v0.01.04-g</div>
   </header>
 
   <div id="pgHome" class="screen active">
@@ -454,7 +454,7 @@ async function backgroundCloudSave(payload) {
   try {
     const userDocRef = firestore.collection("susuru_anki_users").doc(currentUser.uid);
     await userDocRef.set({
-      version: "0.01.03-g",
+      version: "0.01.04-g",
       db: payload.db,
       categories: payload.categories,
       categoryTree: payload.categoryTree,
@@ -474,7 +474,17 @@ function ensureSystemSanity() {
     categoryTree["未分類グループ"].push("未分類");
   }
   
+  // 1. 空文字などの不正なカテゴリーを除去
   categories = [...new Set(categories.filter(c => c && c.trim() !== ""))];
+
+  // 2. ★追加：亡霊カテゴリーの浄化（ツリーに表示されていないカテゴリーをリストから強制削除）
+  const activeCatsInTree = new Set();
+  for (let g in categoryTree) {
+    if (Array.isArray(categoryTree[g])) {
+      categoryTree[g].forEach(c => activeCatsInTree.add(c));
+    }
+  }
+  categories = categories.filter(c => activeCatsInTree.has(c));
   
   db = db.filter(item => 
     item && 
@@ -1428,8 +1438,11 @@ async function syncToCloud(isSilent = false) {
       }
     }
 
+    // ★追加：亡霊データをクラウドに再アップロードしてしまうのを防ぐため、ここで浄化処理を挟む
+    ensureSystemSanity();
+
     const payload = {
-      version: "0.01.03-g",
+      version: "0.01.04-g",
       db: db,
       categories: categories,
       categoryTree: categoryTree,
