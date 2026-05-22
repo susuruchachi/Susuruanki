@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>すするanki 0.01.04-g</title>
+<title>すするanki 0.01.05-g</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
@@ -137,7 +137,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
       <div class="logo-dot"></div>
       <div class="logo-text">すするanki</div>
     </div>
-    <div class="version-badge">v0.01.04-g</div>
+    <div class="version-badge">v0.01.05-g</div>
   </header>
 
   <div id="pgHome" class="screen active">
@@ -309,6 +309,17 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
   </nav>
 </div>
 
+<div class="ctx-overlay" id="bulkAddOverlay" style="display:none;" onclick="closeBulkAdd()">
+  <div class="menu-card" style="padding:20px; max-width:90%; width:400px;" onclick="event.stopPropagation()">
+    <h3 style="color:#fff; margin-bottom:10px; font-size:1.1rem;" id="bulkAddTitle">一括追加</h3>
+    <textarea id="txtBulkAdd" class="form-control" style="height:150px; margin-bottom:15px; font-family:'JetBrains Mono', monospace; font-size:0.85rem;" placeholder="問題,答え(カンマか読点区切り)&#10;問題,答え"></textarea>
+    <div class="form-row">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeBulkAdd()">キャンセル</button>
+      <button class="btn" style="flex:1;" onclick="submitBulkAdd()">追加する</button>
+    </div>
+  </div>
+</div>
+
 <div class="ctx-overlay" id="ctxOverlay" onclick="closeContextMenu()">
   <div class="menu-card" id="ctxCard" onclick="event.stopPropagation()">
     <div class="menu-header" id="ctxHeader">メニュー</div>
@@ -389,6 +400,63 @@ let currentQuestionGradThreshold = 5;
 
 let longPressTimeout = null;
 
+// ★全角半角・順序揺れを吸収する解答正規化機能
+function normalizeAnswer(str) {
+  if(!str) return '';
+  // 全角英数字を半角へ変換
+  let s = String(str).replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(c) {
+    return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+  }).toLowerCase().trim();
+  // 様々な区切り文字を半角カンマに統一
+  s = s.replace(/[、，／/]/g, ',');
+  // 分割してソートし、再結合する（順不同対応）
+  return s.split(',').map(x => x.trim()).filter(x => x !== '').sort().join(',');
+}
+
+// ★一括追加用ロジック
+let targetBulkCategory = "";
+function showBulkAddModal(catName) {
+  targetBulkCategory = catName;
+  document.getElementById('bulkAddTitle').innerText = `一括追加: ${catName}`;
+  document.getElementById('txtBulkAdd').value = '';
+  document.getElementById('bulkAddOverlay').style.display = 'flex';
+}
+function closeBulkAdd() {
+  document.getElementById('bulkAddOverlay').style.display = 'none';
+}
+function submitBulkAdd() {
+  const text = document.getElementById('txtBulkAdd').value.trim();
+  if(!text) { closeBulkAdd(); return; }
+  const lines = text.split(/\r?\n/);
+  let count = 0;
+  const grp = findGroupOfCategory(targetBulkCategory) || "未分類グループ";
+
+  lines.forEach(line => {
+    let idx = line.indexOf(',');
+    if(idx === -1) idx = line.indexOf('、');
+    if(idx !== -1) {
+      const q = line.substring(0, idx).trim();
+      const a = line.substring(idx + 1).trim();
+      if(q && a) {
+        db.push({
+          id: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
+          question: q,
+          answer: a,
+          category: targetBulkCategory,
+          group: grp,
+          level: 0, correct: 0, incorrect: 0, streak: 0
+        });
+        count++;
+      }
+    }
+  });
+  autoMerge();
+  alert(`${count}件の問題を追加しました！`);
+  closeBulkAdd();
+  if (document.getElementById('pgBox').classList.contains('active')) renderBox();
+  if (document.getElementById('pgTree').classList.contains('active')) renderTree();
+}
+
 window.onload = function() {
   loadData();
   autoMerge();
@@ -424,10 +492,8 @@ function saveData() {
   ensureSystemSanity();
   const payload = { db, categories, categoryTree };
   
-  // ローカル保存
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
-  // ログイン中ならクラウドへ自動保存
   if (currentUser) {
     clearTimeout(syncTimeout);
     setSyncStatus('saving', '🔄 保存中...');
@@ -454,7 +520,7 @@ async function backgroundCloudSave(payload) {
   try {
     const userDocRef = firestore.collection("susuru_anki_users").doc(currentUser.uid);
     await userDocRef.set({
-      version: "0.01.04-g",
+      version: "0.01.05-g",
       db: payload.db,
       categories: payload.categories,
       categoryTree: payload.categoryTree,
@@ -474,10 +540,8 @@ function ensureSystemSanity() {
     categoryTree["未分類グループ"].push("未分類");
   }
   
-  // 1. 空文字などの不正なカテゴリーを除去
   categories = [...new Set(categories.filter(c => c && c.trim() !== ""))];
 
-  // 2. ★追加：亡霊カテゴリーの浄化（ツリーに表示されていないカテゴリーをリストから強制削除）
   const activeCatsInTree = new Set();
   for (let g in categoryTree) {
     if (Array.isArray(categoryTree[g])) {
@@ -799,6 +863,24 @@ function handleCategoryLongpress(catName, currentGroupName) {
         
         saveData();
         renderTree();
+      }
+    },
+    { type: 'separator' },
+    {
+      html: '➕ 問題を一括追加 (Q,A 改行)',
+      action: () => { showBulkAddModal(catName); }
+    },
+    {
+      html: '📤 このカテゴリーをエクスポート',
+      action: () => {
+        const subset = db.filter(q => q.category === catName);
+        const payload = { db: subset, categories: [catName], categoryTree: { [currentGroupName]: [catName] } };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `susuru_anki_${catName}_${Date.now()}.json`;
+        a.click();
       }
     },
     { type: 'separator' },
@@ -1186,8 +1268,11 @@ function submitQuizAction() {
     }
     isCorrect = (selectedChoiceIdx === currentCard.answer);
   } else {
-    const inputVal = document.getElementById('txtDescAnswer').value.trim();
-    isCorrect = (inputVal.toLowerCase() === currentCard.answer.trim().toLowerCase());
+    // ★追加: 正規化処理を通して正誤判定
+    const inputVal = document.getElementById('txtDescAnswer').value;
+    const normInput = normalizeAnswer(inputVal);
+    const normAns = normalizeAnswer(currentCard.answer);
+    isCorrect = (normInput === normAns);
     document.getElementById('txtDescAnswer').disabled = true;
   }
 
@@ -1438,11 +1523,10 @@ async function syncToCloud(isSilent = false) {
       }
     }
 
-    // ★追加：亡霊データをクラウドに再アップロードしてしまうのを防ぐため、ここで浄化処理を挟む
     ensureSystemSanity();
 
     const payload = {
-      version: "0.01.04-g",
+      version: "0.01.05-g",
       db: db,
       categories: categories,
       categoryTree: categoryTree,
