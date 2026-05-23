@@ -29,8 +29,8 @@ input, textarea, select { user-select: auto; -webkit-user-select: auto; font-fam
 
 /* ★高さを100dvh(動的ビューポート)にし、Safariのバー被りを防止 */
 .app-container { display: flex; flex-direction: column; height: 100dvh; width: 100vw; position: relative; }
-/* 下部メニューに隠れないようpadding-bottomを多めに確保 */
-.screen { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 20px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+/* 下部メニューに隠れないようpadding-bottomを多めに確保、iPadスクロール改善 */
+.screen { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 20px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); touch-action: pan-y; overscroll-behavior-y: contain; }
 .screen.active { display: flex; }
 
 header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; background: var(--bg2); border-bottom: 1px solid var(--border); z-index: 10; }
@@ -74,9 +74,9 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
 .tree-cat-count { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text3); background: var(--bg2); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); margin-left: auto; }
 
 .ctx-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4,6,10,0.7); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
-.menu-card { background: var(--bg2); border: 1px solid var(--border2); width: 100%; max-width: 340px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; }
+.menu-card { background: var(--bg2); border: 1px solid var(--border2); width: 100%; max-width: 340px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden; display: flex; flex-direction: column; max-height: 70vh; }
 .menu-header { padding: 14px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 0.85rem; font-weight: 700; color: var(--text2); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; text-align: center; }
-.menu-body { overflow-y: auto; flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.menu-body { overflow-y: auto; flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 4px; touch-action: pan-y; overscroll-behavior-y: contain; }
 .menu-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; background: none; border: none; border-radius: 8px; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--text); cursor: pointer; transition: 0.2s; }
 .menu-item:active { background: var(--bg4); color: #fff; }
 .menu-item.danger { color: var(--danger); }
@@ -298,8 +298,12 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
         <div class="achieve-count" id="cntNormal">0</div>
       </div>
       <div class="achieve-row" onclick="filterBoxByStatus('weak')">
-        <div class="achieve-label"><span style="color:var(--danger);">⚠️</span> 苦手 (正答率が低い)</div>
+        <div class="achieve-label"><span style="color:var(--warn);">⚠️</span> 苦手 (レベル0)</div>
         <div class="achieve-count" id="cntWeak">0</div>
+      </div>
+      <div class="achieve-row" onclick="filterBoxByStatus('shikkari')">
+        <div class="achieve-label"><span style="color:var(--danger);">🧱</span> しっかり (要反復)</div>
+        <div class="achieve-count" id="cntShikkari">0</div>
       </div>
       <div class="achieve-row" onclick="filterBoxByStatus('unseen')">
         <div class="achieve-label"><span style="color:var(--text3);">💤</span> 未着手 (学習前)</div>
@@ -454,7 +458,7 @@ function submitBulkAdd() {
         db.push({
           id: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
           question: q, answer: a, category: targetBulkCategory,
-          level: 0, correct: 0, incorrect: 0, streak: 0
+          level: 0, correct: 0, incorrect: 0, streak: 0, wrongStreak: 0, shikkariStreak: 0
         });
         count++;
       }
@@ -546,6 +550,8 @@ function ensureSystemSanity() {
     if(item.correct === undefined) item.correct = 0;
     if(item.incorrect === undefined) item.incorrect = 0;
     if(item.streak === undefined) item.streak = 0;
+    if(item.wrongStreak === undefined) item.wrongStreak = 0;
+    if(item.shikkariStreak === undefined) item.shikkariStreak = 0;
   });
 }
 
@@ -562,6 +568,8 @@ function autoMerge() {
       ext.incorrect = (Number(ext.incorrect)||0) + (Number(item.incorrect)||0);
       ext.level = Math.max(Number(ext.level)||0, Number(item.level)||0);
       ext.streak = Math.max(Number(ext.streak)||0, Number(item.streak)||0);
+      ext.wrongStreak = Math.max(Number(ext.wrongStreak)||0, Number(item.wrongStreak)||0);
+      ext.shikkariStreak = Math.max(Number(ext.shikkariStreak)||0, Number(item.shikkariStreak)||0);
     }
   });
   db = Array.from(mergedMap.values());
@@ -842,8 +850,9 @@ function renderBox() {
     if (currentViewContext === 'grad') filtered = db.filter(q => q.correct >= th);
     if (currentViewContext === 'master') filtered = db.filter(q => q.correct < th && q.level >= 3);
     if (currentViewContext === 'normal') filtered = db.filter(q => q.correct < th && q.level >= 1 && q.level <= 2);
-    if (currentViewContext === 'unseen') filtered = db.filter(q => q.correct === 0 && q.incorrect === 0);
-    if (currentViewContext === 'weak') filtered = db.filter(q => (q.correct+q.incorrect)>0 && (q.correct/(q.correct+q.incorrect))<0.4);
+    if (currentViewContext === 'weak') filtered = db.filter(q => q.correct < th && q.level === 0 && (q.correct+q.incorrect)>0);
+    if (currentViewContext === 'shikkari') filtered = db.filter(q => q.correct < th && q.level === -1);
+    if (currentViewContext === 'unseen') filtered = db.filter(q => q.correct === 0 && q.incorrect === 0 && q.level >= 0);
   }
 
   const sb = document.getElementById('txtSearchBox');
@@ -864,11 +873,14 @@ function renderBox() {
     const card = document.createElement('div'); card.className = 'q-card';
     setupLongpress(card, () => handleQuestionLongpress(item));
 
+    const lvlStr = item.level === -1 ? 'しっかり' : 'LV '+item.level;
+    const badgeHTML = `<span class="badge ${isGrad ? 'badge-grad':'badge-level'}">${isGrad ? 'GRADUATE' : lvlStr}</span>`;
+
     card.innerHTML = `
       <div class="q-card-text">${escapeHtml(item.question)}</div>
       <div style="font-size:0.85rem; color:var(--text2); margin-bottom:8px;">A: <span style="color:#fff; font-weight:500;">${escapeHtml(item.answer)}</span></div>
       <div class="q-card-sub">
-        <span class="badge ${isGrad ? 'badge-grad':'badge-level'}">${isGrad ? 'GRADUATE':'LV '+item.level}</span>
+        ${badgeHTML}
         <span>正解: ${item.correct} / 不正解: ${item.incorrect}</span>
         <span style="font-size:0.75rem; color:var(--text3);">📂 ${escapeHtml(item.category)}</span>
       </div>
@@ -919,7 +931,7 @@ function showAddQModal() {
   db.push({
     id: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
     question: q.trim(), answer: a.trim(), category: defaultCat,
-    level: 0, correct: 0, incorrect: 0, streak: 0
+    level: 0, correct: 0, incorrect: 0, streak: 0, wrongStreak: 0, shikkariStreak: 0
   });
   autoMerge(); renderBox();
 }
@@ -1060,15 +1072,61 @@ function submitQuizAction() {
 function evaluateRoundAnswer(isCorrect, head) {
   quizPhase = 'a'; const cur = quizPool[quizIndex];
   let m = db.find(q => q.id === cur.id);
+  
   if(m) {
+    if(m.wrongStreak === undefined) m.wrongStreak = 0;
+    if(m.shikkariStreak === undefined) m.shikkariStreak = 0;
+
+    const isChoice = document.getElementById('selQuizMode').value === 'choice';
+    const multiplier = isChoice ? 2 : 1;
+    const th = currentQuestionGradThreshold;
+
     if(isCorrect) {
-      m.correct++; m.streak++;
-      if(m.streak >= 2 && m.level < 5) { m.level++; m.streak = 0; }
+      m.correct++; m.streak++; m.wrongStreak = 0;
+      
+      if (m.level === -1) {
+        m.shikkariStreak++;
+        if (m.shikkariStreak >= 5 * multiplier) {
+          m.level = 0; // 苦手に昇格
+          m.shikkariStreak = 0;
+          m.streak = 0;
+        }
+      } else if (m.correct - 1 >= th) {
+        // すでに卒業済みの場合はレベル変動なし
+      } else {
+        if (m.streak >= 2 * multiplier && m.level < 5) {
+          m.level++;
+          m.streak = 0;
+        }
+      }
     } else {
-      m.incorrect++; m.streak = 0; if(m.level > 0) m.level--;
+      m.incorrect++; m.wrongStreak++; m.streak = 0; m.shikkariStreak = 0;
+
+      if (m.correct >= th) {
+        // 卒業からの降格
+        if (m.wrongStreak >= 3 * multiplier) {
+          m.correct = th - 1; // 卒業取り消し
+          m.level = 2; // 普通へ降格
+          m.wrongStreak = 0;
+        }
+      } else {
+        if (m.level === -1) {
+          // しっかりキープ
+        } else {
+          // 4回誤答でしっかりへ直行
+          if (m.wrongStreak >= 4 * multiplier) {
+            m.level = -1; // しっかり
+            m.wrongStreak = 0;
+            m.correct = 0; // 蓄積リセット
+          } else if (m.wrongStreak > 0 && m.wrongStreak % (2 * multiplier) === 0) {
+            if (m.level > 0) m.level--;
+          }
+        }
+      }
     }
     saveData();
   }
+  
   const fb = document.getElementById('quizFeedback');
   document.getElementById('feedbackResultText').innerText = head;
   document.getElementById('feedbackAnswerText').innerText = `正解: ${cur.answer}`;
@@ -1092,8 +1150,9 @@ function renderStats() {
   document.getElementById('cntGrad').innerText = db.filter(q => q.correct >= th).length;
   document.getElementById('cntMaster').innerText = db.filter(q => q.correct < th && q.level >= 3).length;
   document.getElementById('cntNormal').innerText = db.filter(q => q.correct < th && q.level >= 1 && q.level <= 2).length;
-  document.getElementById('cntUnseen').innerText = db.filter(q => q.correct === 0 && q.incorrect === 0).length;
-  document.getElementById('cntWeak').innerText = db.filter(q => (q.correct+q.incorrect)>0 && (q.correct/(q.correct+q.incorrect))<0.4).length;
+  document.getElementById('cntWeak').innerText = db.filter(q => q.correct < th && q.level === 0 && (q.correct+q.incorrect)>0).length;
+  document.getElementById('cntShikkari').innerText = db.filter(q => q.correct < th && q.level === -1).length;
+  document.getElementById('cntUnseen').innerText = db.filter(q => q.correct === 0 && q.incorrect === 0 && q.level >= 0).length;
   document.getElementById('statGradRatio').innerText = t > 0 ? `${Math.round((document.getElementById('cntGrad').innerText/t)*100)}%` : '0%';
 }
 
@@ -1149,7 +1208,7 @@ function importCSV(e) {
         if(!categories.includes(cat)) categories.push(cat);
         db.push({
           id: 'id_'+Math.random().toString(36).slice(2)+Date.now().toString(36),
-          question: q, answer: a, category: cat, level: 0, correct: 0, incorrect: 0, streak: 0
+          question: q, answer: a, category: cat, level: 0, correct: 0, incorrect: 0, streak: 0, wrongStreak: 0, shikkariStreak: 0
         }); count++;
       }
       autoMerge(); alert(`📊 ${count}件インポートしました。`); openPage('pgHome');
