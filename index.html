@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>すするanki 0.01.14-g</title>
+<title>すするanki 0.01.15-g</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 /* ★長押し時のテキスト選択・システムメニューを完全ブロック */
@@ -147,7 +147,7 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
       <div class="logo-dot"></div>
       <div class="logo-text">すするanki</div>
     </div>
-    <div class="version-badge">v0.01.14-g</div>
+    <div class="version-badge">v0.01.15-g</div>
   </header>
 
   <div id="pgHome" class="screen active">
@@ -350,13 +350,14 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
     </div>
 
     <div class="card" style="margin-top:15px;">
-      <div class="setting-box-title">🤝 フレンド機能 & カテゴリー共有 (要ログイン)</div>
+      <div class="setting-box-title">👥 フレンド・チャット機能 (要ログイン)</div>
       <p style="font-size:0.8rem; color:var(--text2); margin-bottom:12px; line-height:1.5;">
-        構造画面でフォルダーを長押し→「共有URLを発行」で、専用の共有リンクを作成できます。<br>
-        また、あなたのUIDを友達に教えると、友達が作成した共有カテゴリーの「共同編集者」に設定してもらえます。
+        フレンドを登録して一覧で管理したり、チャットで会話することができます。共有カテゴリーの共同編集にも便利です。
       </p>
-      <div style="margin-bottom: 10px;">
-        <label style="font-size:0.8rem; color:var(--text2); display:block; margin-bottom:4px;">あなたのUID:</label>
+      <button class="btn" style="margin-bottom: 15px; background: var(--accent);" onclick="openPage('pgFriends'); loadAppFriends();">💬 フレンド一覧・チャットを開く</button>
+      
+      <div style="margin-bottom: 5px;">
+        <label style="font-size:0.8rem; color:var(--text2); display:block; margin-bottom:4px;">あなたのUID (友達に教える用):</label>
         <input type="text" id="txtMyUid" class="form-control" readonly placeholder="ログインすると表示されます" style="margin-bottom: 5px;">
         <button class="btn btn-secondary" onclick="copyMyUid()">📋 あなたのUIDをコピー</button>
       </div>
@@ -379,6 +380,40 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
     <button class="btn btn-danger" style="margin-top:15px;" onclick="factoryReset()">🚨 全データを初期化</button>
   </div>
 
+  <div id="pgFriends" class="screen">
+    <h2>👥 フレンド管理・チャット</h2>
+    
+    <div id="friendsListArea" style="flex:1; display:flex; flex-direction:column;">
+      <div class="card" style="margin-bottom:15px;">
+        <div class="setting-box-title">🤝 新しいフレンドを追加</div>
+        <p style="font-size:0.75rem; color:var(--text2); margin-bottom:8px;">友達から教えてもらったUIDを入力して登録します。</p>
+        <div class="form-row">
+          <input type="text" id="txtAddFriendUid" class="form-control" placeholder="友達のUIDを入力">
+          <button class="btn" style="width:auto; padding:0 15px; background:var(--accent);" onclick="addAppFriend()">追加</button>
+        </div>
+      </div>
+
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin: 10px 0; color: #fff;">📜 フレンド一覧</h3>
+      <div id="appFriendsList" style="flex:1; overflow-y:auto;">
+        <p style="color:var(--text3); font-size:0.8rem;">読み込み中...</p>
+      </div>
+      <button class="btn btn-secondary" style="margin-top:15px;" onclick="openPage('pgBackup')">戻る</button>
+    </div>
+
+    <div id="chatArea" style="display:none; flex-direction:column; height: 100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 id="chatWithTitle" style="font-size:1.1rem; font-weight:bold; color:#fff;">Chat</h3>
+        <button class="btn btn-secondary" style="width:auto; padding:4px 10px; font-size:0.8rem;" onclick="closeChat()">一覧に戻る</button>
+      </div>
+      <div id="chatMessages" style="flex:1; overflow-y:auto; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:15px; display:flex; flex-direction:column; gap:10px; margin-bottom:10px;">
+      </div>
+      <div class="form-row">
+        <input type="text" id="txtChatInput" class="form-control" placeholder="メッセージを入力..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+        <button class="btn" style="width:auto; padding:0 15px; background:var(--primary);" onclick="sendChatMessage()">送信</button>
+      </div>
+    </div>
+  </div>
+
   <div id="pgShared" class="screen">
     <h2 id="sharedTitle">🌐 共有カテゴリー</h2>
     <div class="card" style="margin-bottom: 15px;">
@@ -391,10 +426,10 @@ h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; display: flex; al
 
     <div class="card" id="sharedOwnerPanel" style="display:none; border-color: var(--accent);">
       <div class="setting-box-title" style="color: var(--accent);">👑 管理者メニュー (共同編集者の設定)</div>
-      <p style="font-size:0.8rem; color:var(--text2); margin-bottom:10px;">編集を許可したい友達からUIDを教えてもらい、追加してください。</p>
+      <p style="font-size:0.8rem; color:var(--text2); margin-bottom:10px;">編集を許可したい友達からUIDを教えてもらい、追加してください。（※フレンド一覧から追加済みなら自動反映されます）</p>
       <div class="form-row">
         <input type="text" id="txtNewFriendUid" class="form-control" placeholder="友達のUIDを入力">
-        <button class="btn" style="width:auto; padding:0 15px; background:var(--accent);" onclick="addFriendToShared()">追加</button>
+        <button class="btn" style="width:auto; padding:0 15px; background:var(--accent);" onclick="addFriendToShared()">許可</button>
       </div>
       <div id="sharedFriendsList" style="margin-top: 10px; display:flex; flex-direction:column; gap:5px;"></div>
     </div>
@@ -458,15 +493,17 @@ const firestore = firebase.firestore();
 let currentUser = null;
 let syncTimeout = null;
 
-// ★ モバイル環境でログインが弾かれる問題を解決するため、Redirect方式に変更
+// ★ モバイル(PWA・iOS)でのログイン維持問題を解決するため、Popup方式に戻しエラーを親切に補足
 function firebaseLogin() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithRedirect(provider);
+  auth.signInWithPopup(provider).catch(err => { 
+    if (err.code === 'auth/popup-blocked') {
+      alert("ポップアップがブロックされました。ブラウザの設定でポップアップを許可するか、一度Safari等の標準ブラウザで開いてからお試しください。");
+    } else {
+      alert("ログインエラー: " + err.message); 
+    }
+  });
 }
-// リダイレクト後のエラーハンドリング
-auth.getRedirectResult().catch(err => { 
-  alert("ログインエラー: " + err.message + "\n※ブラウザのCookie設定などが原因で弾かれている可能性があります。"); 
-});
 
 auth.onAuthStateChanged((user) => {
   currentUser = user;
@@ -481,6 +518,12 @@ auth.onAuthStateChanged((user) => {
       btnLogout.style.display = 'inline-flex';
       document.getElementById('txtMyUid').value = user.uid; // フレンド用UIDセット
       syncToCloud(true);
+
+      // プロフィール（表示名とUID）をFirestoreに自動登録してフレンド機能で名前が出るようにする
+      firestore.collection('susuru_anki_profiles').doc(user.uid).set({
+        displayName: user.displayName || user.email || '名無しユーザー',
+        uid: user.uid
+      }, { merge: true });
 
       // もし共有ページを開いていて権限待ち状態なら再描画
       if (currentSharedDocId) listenToSharedDoc(currentSharedDocId);
@@ -611,7 +654,7 @@ function setSyncStatus(state, text) {
 async function backgroundCloudSave(payload) {
   try {
     await firestore.collection("susuru_anki_users").doc(currentUser.uid).set({
-      version: "0.01.14-g", db: payload.db, categories: payload.categories,
+      version: "0.01.15-g", db: payload.db, categories: payload.categories,
       categoryTree: payload.categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp()
     });
     setSyncStatus('success', '✅ 保存完了');
@@ -677,6 +720,12 @@ function executePageTransition(pageId, isBackAction) {
     pageHistory.push(currentId);
     history.pushState({ page: pageId }, '', '');
   }
+  
+  // チャットを開いたまま他の画面に移動した場合はリストに戻しておく
+  if (pageId !== 'pgFriends') {
+      closeChat();
+  }
+
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -1697,7 +1746,7 @@ async function syncToCloud(isSilent = false) {
       }
     }
     ensureSystemSanity();
-    await ref.set({ version: "0.01.14-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
+    await ref.set({ version: "0.01.15-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
     autoMerge();
     if (document.getElementById('pgTree').classList.contains('active')) renderTree();
     if (document.getElementById('pgBox').classList.contains('active')) renderBox();
@@ -1735,12 +1784,11 @@ let currentSharedDocId = null;
 let currentSharedData = null;
 let unsubscribeShared = null;
 
-// フレンド登録用のUIDコピー機能
 function copyMyUid() {
   const uid = document.getElementById('txtMyUid').value;
   if (!uid) return alert("⚠️ UIDを確認するにはGoogleログインが必要です。");
   navigator.clipboard.writeText(uid).then(() => {
-    alert("✅ 自分のUIDをコピーしました！\n共有カテゴリーの作成者にこのUIDを送って、共同編集者に追加してもらってください。");
+    alert("✅ 自分のUIDをコピーしました！\nフレンド登録したい相手にこのUIDを送ってください。");
   });
 }
 
@@ -1938,6 +1986,144 @@ function exitSharedMode() {
   const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
   window.history.pushState({path: cleanUrl}, '', cleanUrl);
   openPage('pgHome');
+}
+
+// ==========================================
+// 🌟 フレンド機能 ＆ チャットシステム
+// ==========================================
+
+let currentChatUnsubscribe = null;
+let currentChatFriendUid = null;
+
+// フレンドを自分のプロフィールに追加
+async function addAppFriend() {
+  const fUid = document.getElementById('txtAddFriendUid').value.trim();
+  if (!fUid) return alert("UIDを入力してください。");
+  if (!currentUser) return alert("ログインが必要です。");
+  if (fUid === currentUser.uid) return alert("自分自身のUIDは登録できません。");
+
+  try {
+    await firestore.collection('susuru_anki_profiles').doc(currentUser.uid).set({
+      friends: firebase.firestore.FieldValue.arrayUnion(fUid)
+    }, { merge: true });
+    
+    document.getElementById('txtAddFriendUid').value = '';
+    alert("✅ フレンドを登録しました！");
+    loadAppFriends();
+  } catch (e) {
+    console.error(e);
+    alert("⚠️ フレンド追加に失敗しました。");
+  }
+}
+
+// フレンド一覧の読み込み・描画
+async function loadAppFriends() {
+  const listDiv = document.getElementById('appFriendsList');
+  listDiv.innerHTML = '<p style="color:var(--text3); font-size:0.8rem; text-align:center; padding:20px;">読み込み中...</p>';
+  if (!currentUser) {
+    listDiv.innerHTML = '<p style="color:var(--danger); font-size:0.85rem; text-align:center; padding:20px;">ログインしてください</p>';
+    return;
+  }
+
+  try {
+    const myProfileSnap = await firestore.collection('susuru_anki_profiles').doc(currentUser.uid).get();
+    const friends = myProfileSnap.exists ? (myProfileSnap.data().friends || []) : [];
+
+    if (friends.length === 0) {
+      listDiv.innerHTML = '<p style="color:var(--text3); font-size:0.85rem; text-align:center; padding:20px;">登録されているフレンドはいません。</p>';
+      return;
+    }
+
+    listDiv.innerHTML = '';
+    for (const fUid of friends) {
+      const fProfSnap = await firestore.collection('susuru_anki_profiles').doc(fUid).get();
+      const fName = fProfSnap.exists ? fProfSnap.data().displayName : '未登録ユーザー';
+
+      const div = document.createElement('div');
+      div.className = 'achieve-row'; // 既存の行デザインを流用
+      div.innerHTML = `
+        <div class="achieve-label">👤 ${escapeHtml(fName)}</div>
+        <button class="btn" style="width:auto; padding:6px 12px; font-size:0.8rem; background:var(--primary);" onclick="openChat('${fUid}', '${escapeHtml(fName)}')">💬 チャット</button>
+      `;
+      listDiv.appendChild(div);
+    }
+  } catch (e) {
+    console.error(e);
+    listDiv.innerHTML = '<p style="color:var(--danger); font-size:0.8rem; text-align:center;">エラーが発生しました。</p>';
+  }
+}
+
+// チャットルームのIDを生成 (UID同士をアルファベット順にして結合)
+function getChatId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_');
+}
+
+// チャットを開く
+function openChat(friendUid, friendName) {
+  document.getElementById('friendsListArea').style.display = 'none';
+  document.getElementById('chatArea').style.display = 'flex';
+  document.getElementById('chatWithTitle').innerText = friendName + " とのチャット";
+  currentChatFriendUid = friendUid;
+
+  const chatId = getChatId(currentUser.uid, friendUid);
+  const msgBox = document.getElementById('chatMessages');
+  msgBox.innerHTML = '<div style="color:var(--text3); text-align:center; font-size:0.8rem;">履歴を取得中...</div>';
+
+  if (currentChatUnsubscribe) currentChatUnsubscribe();
+
+  // リアルタイムでメッセージを受信
+  currentChatUnsubscribe = firestore.collection('susuru_anki_chats').doc(chatId).collection('messages')
+    .orderBy('timestamp', 'asc')
+    .onSnapshot(snap => {
+      msgBox.innerHTML = '';
+      if (snap.empty) {
+        msgBox.innerHTML = '<div style="color:var(--text3); text-align:center; font-size:0.8rem; margin-top:20px;">まだメッセージがありません。<br>挨拶してみましょう！</div>';
+      }
+      snap.forEach(doc => {
+        const data = doc.data();
+        const isMe = data.senderId === currentUser.uid;
+        
+        const wrap = document.createElement('div');
+        wrap.style.cssText = `display:flex; flex-direction:column; max-width:80%; ${isMe ? 'align-self:flex-end;' : 'align-self:flex-start;'}`;
+        
+        const bubble = document.createElement('div');
+        bubble.style.cssText = `padding:10px 14px; border-radius:14px; font-size:0.9rem; line-height:1.4; word-break:break-all; ${isMe ? 'background:var(--primary); color:#fff; border-bottom-right-radius:2px;' : 'background:var(--bg3); border:1px solid var(--border); color:var(--text); border-bottom-left-radius:2px;'}`;
+        bubble.innerText = data.text;
+        
+        wrap.appendChild(bubble);
+        msgBox.appendChild(wrap);
+      });
+      // スクロールを一番下へ
+      msgBox.scrollTop = msgBox.scrollHeight;
+    });
+}
+
+// チャットを閉じる
+function closeChat() {
+  if (currentChatUnsubscribe) { currentChatUnsubscribe(); currentChatUnsubscribe = null; }
+  document.getElementById('chatArea').style.display = 'none';
+  document.getElementById('friendsListArea').style.display = 'flex';
+  currentChatFriendUid = null;
+}
+
+// メッセージを送信
+async function sendChatMessage() {
+  const input = document.getElementById('txtChatInput');
+  const text = input.value.trim();
+  if (!text || !currentChatFriendUid) return;
+
+  const chatId = getChatId(currentUser.uid, currentChatFriendUid);
+  try {
+    await firestore.collection('susuru_anki_chats').doc(chatId).collection('messages').add({
+      text: text,
+      senderId: currentUser.uid,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    input.value = '';
+  } catch (e) {
+    console.error(e);
+    alert("⚠️ 送信エラーが発生しました。");
+  }
 }
 
 function escapeHtml(s) {
