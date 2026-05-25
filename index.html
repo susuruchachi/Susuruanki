@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>すするanki 0.02.02-g</title>
+<title>すするanki 0.02.03-g</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
@@ -140,9 +140,8 @@ body.light-mode .sync-status { background: rgba(255,255,255,0.9); }
 .sync-status.error { color: var(--danger); border-color: var(--danger); }
 .sync-status.hidden { opacity: 0; transform: translateY(-10px); }
 
-/* お知らせバナー */
-.update-banner { background: rgba(79,124,255,0.15); border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; line-height: 1.5; color: var(--text); }
-.update-banner-title { font-weight: bold; color: var(--primary); margin-bottom: 4px; display:flex; align-items:center; gap:6px; }
+/* お知らせバナー・履歴用 */
+.update-banner-title { font-weight: bold; color: var(--primary); display:flex; align-items:center; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -160,13 +159,11 @@ body.light-mode .sync-status { background: rgba(255,255,255,0.9); }
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
       <button class="btn btn-secondary" style="padding: 4px 8px; width:auto; font-size:0.8rem;" onclick="toggleLightMode()">🌓</button>
-      <div class="version-badge">v0.02.02-g</div>
+      <div class="version-badge">v0.02.03-g</div>
     </div>
   </header>
 
   <div id="pgHome" class="screen active">
-    <div id="updateBannerContainer"></div>
-    
     <h2>🏠 クイズに挑戦</h2>
     <div class="card" style="display:flex; gap:10px;">
       <button class="btn btn-accent" style="flex:1;" onclick="startQuiz('tokkun')">🔥 集中特訓<br><span style="font-size:0.65rem;">(苦手・しっかりのみ)</span></button>
@@ -221,11 +218,31 @@ body.light-mode .sync-status { background: rgba(255,255,255,0.9); }
       </div>
     </div>
     <button class="btn" onclick="startQuiz('normal')"><i class="nav-item"></i>🚀 通常クイズスタート</button>
-    <button class="btn btn-secondary" style="margin-top:15px;" onclick="openPage('pgTutorial')">📖 使い方ガイドを見る</button>
+    <div class="form-row" style="margin-top:15px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="openPage('pgTutorial')">📖 使い方ガイド</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="openPage('pgUpdates'); loadUpdates();">📢 お知らせ履歴</button>
+    </div>
+  </div>
+
+  <div id="pgUpdates" class="screen">
+    <h2>📢 お知らせ・アプデ履歴</h2>
+    <div id="updatesListArea" style="display:flex; flex-direction:column; gap:10px;">
+      <p style="text-align:center; color:var(--text3); font-size:0.9rem;">読み込み中...</p>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:15px;" onclick="openPage('pgHome')">🏠 ホームに戻る</button>
   </div>
   
   <div id="pgTutorial" class="screen">
     <h2>📖 使い方ガイド</h2>
+    <div class="card">
+      <div class="setting-box-title">🆕 0.02.x の新機能・活用法</div>
+      <ul style="font-size:0.8rem; line-height:1.6; color:var(--text2); padding-left:20px;">
+        <li style="margin-bottom:6px;"><strong>統計・ヒートマップ：</strong> 実績タブで日々の努力を可視化。モチベUP！</li>
+        <li style="margin-bottom:6px;"><strong>弱点克服モード：</strong> ホームの「🔥集中特訓」で苦手な問題を一気に復習。</li>
+        <li style="margin-bottom:6px;"><strong>みんはや形式・タップモード：</strong> 入力の手間を省きつつ、勘で当たるのを防ぎます。</li>
+        <li><strong>ソーシャル機能：</strong> ランキングや共有カテゴリーで友達と切磋琢磨・共同編集が可能です。</li>
+      </ul>
+    </div>
     <div class="card">
       <div class="setting-box-title">🔰 基本の3ステップ</div>
       <div style="font-size:0.9rem; line-height:1.6; color:var(--text);">
@@ -244,7 +261,7 @@ body.light-mode .sync-status { background: rgba(255,255,255,0.9); }
     </div>
     <div class="card">
       <div class="setting-box-title">✨ 解答のコツ (記述式)</div>
-      <p style="font-size:0.85rem; line-height:1.6; color:var(--text);">全角・半角の違いは自動で吸収されます。<br>また、答えに「りんご, みかん」のようにカンマや読点、<strong>半角・全角スペース</strong>が含まれる場合、順番が「みかん りんご」と逆に入力しても正解として判定されます！<br>※ 「/」や「|」で区切ると別解（どちらでも正解）になります。</p>
+      <p style="font-size:0.85rem; line-height:1.6; color:var(--text);">全角・半角の違いは自動で吸収されます。<br>また、答えに「りんご, みかん」のようにカンマや読点、<strong>半角・全角スペース</strong>が含まれる場合、順番が「みかん りんご」と逆に入力しても正解として判定されます！<br>※ <code>/</code> や <code>|</code> で区切ると別解（どちらを入れても正解）になります。</p>
     </div>
     <button class="btn btn-secondary" style="margin-top:10px;" onclick="openPage('pgHome')">🏠 ホームに戻る</button>
   </div>
@@ -504,10 +521,9 @@ let quizPool=[], quizIndex=0, quizTimer=null, autoNextTimeout=null;
 let quizTimeLimit=0, quizTimeLeft=0, quizPhase='q', selectedChoiceIdx=null, currentQuestionGradThreshold=5, selectedScopePath=[];
 let syncTimeout = null;
 
-// ★日本時間(JST)で確実なYYYY-MM-DDを取得する関数（時差バグ修正）
 function getTodayStr() {
   const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // ローカルタイムオフセットを補正
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().split('T')[0];
 }
 
@@ -524,9 +540,6 @@ window.onload = function() {
 
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('share_id')) { openPage('pgShared'); listenToSharedDoc(urlParams.get('share_id')); }
-
-  // アプデ通知は少し待ってから取得
-  setTimeout(checkUpdates, 1500);
 };
 
 function toggleLightMode(forceOn = false) {
@@ -560,7 +573,7 @@ function setSyncStatus(state, text) {
 async function backgroundCloudSave(payload) {
   try {
     await firestore.collection("susuru_anki_users").doc(currentUser.uid).set({
-      version: "0.02.02-g", db: payload.db, categories: payload.categories,
+      version: "0.02.03-g", db: payload.db, categories: payload.categories,
       categoryTree: payload.categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp()
     });
     setSyncStatus('success', '✅ 保存完了');
@@ -639,7 +652,7 @@ async function syncToCloud(isSilent = false) {
       }
     }
     ensureSystemSanity();
-    await ref.set({ version: "0.02.02-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
+    await ref.set({ version: "0.02.03-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
     autoMerge();
     if (document.getElementById('pgTree').classList.contains('active')) renderTree();
     if (document.getElementById('pgBox').classList.contains('active')) renderBox();
@@ -647,15 +660,30 @@ async function syncToCloud(isSilent = false) {
   } catch (err) { if (!isSilent) alert(`⚠️ 同期エラー: ${err.message}\n(Firebaseのルール設定などを確認してください)`); }
 }
 
-async function checkUpdates() {
+// ----------------- お知らせ履歴 -----------------
+async function loadUpdates() {
+  const area = document.getElementById('updatesListArea');
+  area.innerHTML = '<p style="text-align:center; color:var(--text3); font-size:0.9rem;">読み込み中...</p>';
   try {
-    const snap = await firestore.collection('susuru_anki_updates').orderBy('date','desc').limit(1).get();
-    if(!snap.empty) {
-      const d = snap.docs[0].data();
-      document.getElementById('updateBannerContainer').innerHTML = `<div class="update-banner"><div class="update-banner-title">🎉 ${escapeHtml(d.title)} (v${escapeHtml(d.version)})</div>${escapeHtml(d.content)}</div>`;
+    const snap = await firestore.collection('susuru_anki_updates').orderBy('date','desc').limit(30).get();
+    if(snap.empty) {
+      area.innerHTML = '<p style="text-align:center; color:var(--text3); font-size:0.9rem;">まだお知らせはありません。</p>';
+      return;
     }
-  } catch(e){
-      console.warn("アプデ情報の取得に失敗しました(ルールの可能性)", e);
+    area.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const dateStr = d.date && d.date.toDate ? d.date.toDate().toLocaleDateString('ja-JP') : '';
+      area.innerHTML += `<div class="card" style="margin-bottom:10px;">
+        <div class="update-banner-title" style="margin-bottom:8px;">🎉 ${escapeHtml(d.title)} (v${escapeHtml(d.version)}) 
+          <span style="font-size:0.7rem; color:var(--text3); margin-left:auto;">${dateStr}</span>
+        </div>
+        <div style="font-size:0.85rem; line-height:1.5; color:var(--text); white-space:pre-wrap;">${escapeHtml(d.content)}</div>
+      </div>`;
+    });
+  } catch(e) {
+    console.warn("アプデ情報の取得に失敗しました", e);
+    area.innerHTML = '<p style="text-align:center; color:var(--danger); font-size:0.9rem;">取得に失敗しました</p>';
   }
 }
 
@@ -780,22 +808,51 @@ function addNewRootCategory() {
 
 // ----------------- コンテキストメニュー & 長押し -----------------
 function setupLongpress(element, actionCallback) {
-  let pressTimer; let isDragging = false;
+  let pressTimer = null; 
+  let startX = 0, startY = 0;
+  let isDragging = false;
+  
   const startHandler = (e) => {
     if (e.type === 'contextmenu') { e.preventDefault(); return; }
     if (e.touches && e.touches.length > 1) return;
+    
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    startX = clientX; startY = clientY;
     isDragging = false;
+    
     pressTimer = setTimeout(() => {
-      if (!isDragging) { if (navigator.vibrate) navigator.vibrate(50); actionCallback(); }
+      if (!isDragging) { 
+        if (navigator.vibrate) navigator.vibrate(50); 
+        actionCallback(); 
+      }
     }, 500);
   };
-  const moveHandler = () => { isDragging = true; clearTimeout(pressTimer); };
-  const cancelHandler = () => clearTimeout(pressTimer);
-  element.addEventListener('mousedown', startHandler); element.addEventListener('touchstart', startHandler, { passive: true });
-  element.addEventListener('mousemove', moveHandler); element.addEventListener('touchmove', moveHandler, { passive: true });
-  element.addEventListener('mouseup', cancelHandler); element.addEventListener('mouseleave', cancelHandler);
-  element.addEventListener('touchend', cancelHandler); element.addEventListener('touchcancel', cancelHandler);
-  element.addEventListener('contextmenu', e => e.preventDefault());
+  
+  const moveHandler = (e) => { 
+    if(!pressTimer) return;
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    if(Math.abs(clientX - startX) > 10 || Math.abs(clientY - startY) > 10) {
+      isDragging = true; 
+      clearTimeout(pressTimer); 
+      pressTimer = null;
+    }
+  };
+  
+  const cancelHandler = () => { 
+    if(pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  };
+  
+  element.addEventListener('mousedown', startHandler); 
+  element.addEventListener('touchstart', startHandler, { passive: true });
+  element.addEventListener('mousemove', moveHandler); 
+  element.addEventListener('touchmove', moveHandler, { passive: true });
+  element.addEventListener('mouseup', cancelHandler); 
+  element.addEventListener('mouseleave', cancelHandler);
+  element.addEventListener('touchend', cancelHandler); 
+  element.addEventListener('touchcancel', cancelHandler);
+  element.addEventListener('contextmenu', e => { e.preventDefault(); });
 }
 
 function openContextMenu(title, items) {
@@ -1126,7 +1183,6 @@ function buildMinhayaMode(cur) {
 function renderMinhayaDisplay(cur) {
   const area = document.getElementById('boxMinhayaArea'); area.innerHTML = '';
   
-  // ひらがな・漢字のヒント
   let hintType = '';
   if(/^[ぁ-ん]+$/.test(minhayaTarget)) hintType = `【${minhayaTarget.length}文字】(ひらがなのみ)`;
   else if(/^[ァ-ヶ]+$/.test(minhayaTarget)) hintType = `【${minhayaTarget.length}文字】(カタカナのみ)`;
@@ -1314,7 +1370,7 @@ function saveQuickNote(val) {
 
 async function recordDailyLog(isCorrect) {
   if(!currentUser) return;
-  const d = getTodayStr(); // ★JSTで確実に当日の日付を取得
+  const d = getTodayStr(); 
   const lRef = firestore.collection('susuru_anki_logs').doc(`${d}_${currentUser.uid}`);
   const sRef = firestore.collection('susuru_anki_daily_scores').doc(`${d}_${currentUser.uid}`);
   try {
@@ -1412,21 +1468,17 @@ function escapeHtml(s) { if(!s) return ''; return String(s).replace(/&/g,"&amp;"
 async function loadDailyRanking() {
   const listDiv = document.getElementById('rankingList');
   if (!currentUser) { listDiv.innerHTML = 'ログインしてください'; return; }
-  const d = getTodayStr(); // ★JSTで確実に当日の日付を取得
+  const d = getTodayStr();
   try {
     listDiv.innerHTML = '(読み込み中...)';
-    
-    // ★複合インデックスエラーを避けるため、whereのみで取得し、並び替え(orderBy)はフロント側で行うように変更
     const snap = await firestore.collection('susuru_anki_daily_scores').where('date', '==', d).get();
     
     if(snap.empty) { listDiv.innerHTML = 'まだ今日のスコアがありません。あなたが1番乗りです！'; return; }
     
     let scores = [];
     snap.forEach(doc => scores.push(doc.data()));
-    
-    // スコア順に並び替え
     scores.sort((a, b) => (b.score || 0) - (a.score || 0));
-    scores = scores.slice(0, 10); // 上位10名
+    scores = scores.slice(0, 10);
     
     listDiv.innerHTML = '';
     let rank = 1;
@@ -1449,7 +1501,6 @@ async function addAppFriend() {
   if (!fUid) return alert("UIDを入力してください。"); if (!currentUser) return alert("ログインが必要です。"); if (fUid === currentUser.uid) return alert("自分自身は登録できません。");
   try {
     await firestore.collection('susuru_anki_profiles').doc(currentUser.uid).set({ friends: firebase.firestore.FieldValue.arrayUnion(fUid) }, { merge: true });
-    // 相互登録用(簡易版、本来は承認制などが望ましい)
     await firestore.collection('susuru_anki_profiles').doc(fUid).set({ friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }, { merge: true });
     document.getElementById('txtAddFriendUid').value = ''; alert("✅ フレンドを追加しました！"); loadAppFriends();
   } catch (e) { alert("⚠️ フレンド追加に失敗しました。ルールの確認を。"); }
