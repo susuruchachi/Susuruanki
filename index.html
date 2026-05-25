@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>すするanki 0.02.01-g</title>
+<title>すするanki 0.02.02-g</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
@@ -13,10 +13,12 @@
   --border: #2a3a55; --border2:#3a4f72; --text: #e8edf5; --text2: #8a9bb8; --text3: #5a6e8a;
   --primary:#4f7cff; --primary2:#3a62e0; --accent: #7c3fff; --success:#22c77a; --danger: #ff4f6a; --warn: #f5a623;
 }
+/* ★ ライトモード対応 */
 body.light-mode {
   --bg: #f0f2f5; --bg2: #ffffff; --bg3: #e4e7ec; --bg4: #d1d5db;
   --border: #d1d5db; --border2:#9ca3af; --text: #111827; --text2: #4b5563; --text3: #6b7280;
 }
+
 body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; overflow: hidden; position: fixed; width: 100%; user-select: none; -webkit-user-select: none; transition: background 0.3s, color 0.3s; }
 input, textarea, select { user-select: auto; -webkit-user-select: auto; font-family: inherit; color: inherit; -webkit-touch-callout: default; }
 
@@ -158,7 +160,7 @@ body.light-mode .sync-status { background: rgba(255,255,255,0.9); }
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
       <button class="btn btn-secondary" style="padding: 4px 8px; width:auto; font-size:0.8rem;" onclick="toggleLightMode()">🌓</button>
-      <div class="version-badge">v0.02.01-g</div>
+      <div class="version-badge">v0.02.02-g</div>
     </div>
   </header>
 
@@ -494,13 +496,20 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(); const firestore = firebase.firestore();
 
-const STORAGE_KEY = 'susuru_anki_021g';
+const STORAGE_KEY = 'susuru_anki_022g';
 let currentUser = null, db = [], categories = ["未分類"], categoryTree = {};
 let currentViewContext = 'all', pageHistory = [];
 let chartInstance = null, currentCombo = 0, todayCorrectCount = 0;
 let quizPool=[], quizIndex=0, quizTimer=null, autoNextTimeout=null;
 let quizTimeLimit=0, quizTimeLeft=0, quizPhase='q', selectedChoiceIdx=null, currentQuestionGradThreshold=5, selectedScopePath=[];
 let syncTimeout = null;
+
+// ★日本時間(JST)で確実なYYYY-MM-DDを取得する関数（時差バグ修正）
+function getTodayStr() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // ローカルタイムオフセットを補正
+  return d.toISOString().split('T')[0];
+}
 
 window.onload = function() {
   loadData(); ensureSystemSanity(); autoMerge();
@@ -551,7 +560,7 @@ function setSyncStatus(state, text) {
 async function backgroundCloudSave(payload) {
   try {
     await firestore.collection("susuru_anki_users").doc(currentUser.uid).set({
-      version: "0.02.01-g", db: payload.db, categories: payload.categories,
+      version: "0.02.02-g", db: payload.db, categories: payload.categories,
       categoryTree: payload.categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp()
     });
     setSyncStatus('success', '✅ 保存完了');
@@ -630,7 +639,7 @@ async function syncToCloud(isSilent = false) {
       }
     }
     ensureSystemSanity();
-    await ref.set({ version: "0.02.01-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
+    await ref.set({ version: "0.02.02-g", db, categories, categoryTree, lastSync: firebase.firestore.FieldValue.serverTimestamp() });
     autoMerge();
     if (document.getElementById('pgTree').classList.contains('active')) renderTree();
     if (document.getElementById('pgBox').classList.contains('active')) renderBox();
@@ -987,7 +996,7 @@ function normalizeAnswer(str) {
   if(!str) return '';
   let s = String(str).replace(/[Ａ-Ｚａ-ｚ０-９]/g, c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase().trim();
   s = s.replace(/擦/g, 'こす'); // 漢字揺れ対策
-  // 別解対応: 最初の一つだけを正解のベースにする（もし入力と合わせるならsplitしてチェックするが、まずは区切りを統一）
+  // 別解対応: 最初の一つだけを正解のベースにする
   s = s.replace(/[、，＼＼ \u3000]+/g, ',');
   return s.split(',').map(x=>x.trim()).filter(x=>x!=='').sort().join(',');
 }
@@ -1305,7 +1314,7 @@ function saveQuickNote(val) {
 
 async function recordDailyLog(isCorrect) {
   if(!currentUser) return;
-  const d = new Date().toISOString().split('T')[0];
+  const d = getTodayStr(); // ★JSTで確実に当日の日付を取得
   const lRef = firestore.collection('susuru_anki_logs').doc(`${d}_${currentUser.uid}`);
   const sRef = firestore.collection('susuru_anki_daily_scores').doc(`${d}_${currentUser.uid}`);
   try {
@@ -1403,21 +1412,31 @@ function escapeHtml(s) { if(!s) return ''; return String(s).replace(/&/g,"&amp;"
 async function loadDailyRanking() {
   const listDiv = document.getElementById('rankingList');
   if (!currentUser) { listDiv.innerHTML = 'ログインしてください'; return; }
-  const d = new Date().toISOString().split('T')[0];
+  const d = getTodayStr(); // ★JSTで確実に当日の日付を取得
   try {
     listDiv.innerHTML = '(読み込み中...)';
-    const snap = await firestore.collection('susuru_anki_daily_scores').where('date', '==', d).orderBy('score', 'desc').limit(10).get();
+    
+    // ★複合インデックスエラーを避けるため、whereのみで取得し、並び替え(orderBy)はフロント側で行うように変更
+    const snap = await firestore.collection('susuru_anki_daily_scores').where('date', '==', d).get();
+    
     if(snap.empty) { listDiv.innerHTML = 'まだ今日のスコアがありません。あなたが1番乗りです！'; return; }
+    
+    let scores = [];
+    snap.forEach(doc => scores.push(doc.data()));
+    
+    // スコア順に並び替え
+    scores.sort((a, b) => (b.score || 0) - (a.score || 0));
+    scores = scores.slice(0, 10); // 上位10名
+    
     listDiv.innerHTML = '';
     let rank = 1;
-    snap.forEach(doc => {
-      const data = doc.data();
+    scores.forEach(data => {
       listDiv.innerHTML += `<div><span style="display:inline-block; width:24px; color:var(--warn); font-weight:bold;">${rank}</span>: ${escapeHtml(data.name)} <span style="color:var(--success); font-weight:bold;">(${data.score}問)</span></div>`;
       rank++;
     });
   } catch(e) {
     console.error(e);
-    listDiv.innerHTML = '<span style="color:var(--danger)">ランキング取得エラー (Firebaseルールの確認をしてください)</span>';
+    listDiv.innerHTML = '<span style="color:var(--danger)">ランキング取得エラー (通信状況等をご確認ください)</span>';
   }
 }
 
